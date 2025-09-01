@@ -4,11 +4,20 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+//    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
     implementation 'org.mapstruct:mapstruct:1.6.3'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'io.projectreactor:reactor-test'
+    implementation "org.springdoc:springdoc-openapi-starter-webflux-ui:${openApiVersion}"
+ //   testImplementation 'org.springframework.boot:spring-boot-starter-test'
+  //  testImplementation 'io.projectreactor:reactor-test'
+
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
 }

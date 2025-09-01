@@ -1,16 +1,16 @@
 package co.com.pragma.r2dbc.entities;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
-import org.springframework.data.relational.core.mapping.Table;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Table("users")
 @AllArgsConstructor
@@ -21,7 +21,7 @@ public class UserEntity {
 
     @Id
     @Column("id_user")
-    private Long idUser;
+    private UUID idUser;
 
     @Column("first_name")
     private String firstName;
@@ -47,6 +47,9 @@ public class UserEntity {
     @Column("base_salary")
     private BigDecimal baseSalary;
 
+    @Column("password")
+    private String password;
+
     @Column("id_rol")
-    private Integer idRol;
+    private UUID idRol;
 }

@@ -1,9 +1,11 @@
 package co.com.pragma.api.config;
 
-import co.com.pragma.api.Handler;
-import co.com.pragma.api.RouterRest;
+import co.com.pragma.api.dto.request.UserRequestDTO;
+import co.com.pragma.api.handler.UserHandler;
+import co.com.pragma.api.routerrest.UserRouterRest;
 import co.com.pragma.api.mapper.UserMapperDTO;
-import co.com.pragma.usecase.user.interfaces.IUserUseCase;
+import co.com.pragma.usecase.user.UserUseCase;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,17 +13,26 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-@ContextConfiguration(classes = {RouterRest.class, Handler.class})
+@ContextConfiguration(classes = {UserRouterRest.class, UserHandler.class})
 @WebFluxTest
 @Import({
-        RouterRest.class,
-        Handler.class,
+        UserRouterRest.class,
+        UserHandler.class,
         CorsConfig.class,
+        SecurityConfig.class,
         SecurityHeadersConfig.class,
         ConfigTest.MockBeans.class
 })
@@ -33,35 +44,78 @@ class ConfigTest {
     @TestConfiguration
     static class MockBeans {
         @Bean
-        IUserUseCase saveUserUseCase() {
-            return mock ( IUserUseCase.class );
-        }
-
-        @Bean
-        Validator validator() {
-            return mock ( Validator.class );
+        UserUseCase saveUserUseCase() {
+            return mock(UserUseCase.class);
         }
 
         @Bean
         UserMapperDTO userDTOMapper() {
-            return mock ( UserMapperDTO.class );
+            return mock(UserMapperDTO.class);
         }
+
+      /*  @Bean
+        PasswordEncoder passwordEncoder() {
+            return mock ( PasswordEncoder.class );
+        }*/
+    }
+
+    private UserRequestDTO buildUserRequest(UUID idRol) {
+        UserRequestDTO req = new UserRequestDTO();
+        req.setFirstName("axel");
+        req.setLastName("Puertas");
+        req.setAddress("Av santa rosa");
+        req.setEmailAddress("axalpusa11125@gmail.com");
+        req.setBirthDate(LocalDate.parse("01-05-1994", DateTimeFormatter.ofPattern("dd-MM-yyyy")));
+        req.setDocumentId("48594859");
+        req.setPhoneNumber("973157252");
+        req.setBaseSalary(new BigDecimal("700000"));
+        req.setIdRol(idRol);
+        return req;
+    }
+
+    private void expectSecurityHeaders(WebTestClient.ResponseSpec response) {
+        response
+                .expectHeader().valueEquals("Content-Security-Policy",
+                        "default-src 'self'; frame-ancestors 'self'; form-action 'self'")
+                .expectHeader().value("Strict-Transport-Security",
+                        v -> assertTrue(v.startsWith("max-age=31536000")))
+                .expectHeader().valueEquals("X-Content-Type-Options", "nosniff")
+                .expectHeader().value("Cache-Control",
+                        v -> assertTrue(v.contains("no-store")))
+                .expectHeader().valueEquals("Pragma", "no-cache")
+                .expectHeader().valueEquals("Referrer-Policy", "strict-origin-when-cross-origin")
+                .expectHeader().valueEquals("X-Frame-Options", "DENY");
     }
 
     @Test
-    void securityHeadersShouldBePresent() {
-        webTestClient.post ( )
-                .uri ( "/api/v1/usuarios" )
-                .bodyValue ( "{}" )
-                .exchange ( )
-                .expectStatus ( ).is4xxClientError ( )
-                .expectHeader ( ).valueEquals ( "Content-Security-Policy",
-                        "default-src 'self'; frame-ancestors 'self'; form-action 'self'" )
-                .expectHeader ( ).valueEquals ( "Strict-Transport-Security", "max-age=31536000;" )
-                .expectHeader ( ).valueEquals ( "X-Content-Type-Options", "nosniff" )
-                .expectHeader ( ).valueEquals ( "Cache-Control", "no-store" )
-                .expectHeader ( ).valueEquals ( "Pragma", "no-cache" )
-                .expectHeader ( ).valueEquals ( "Referrer-Policy", "strict-origin-when-cross-origin" );
+    void userSecurityHeadersShouldBePresent() {
+        UUID idRolUser = UUID.fromString("a71e243b-e901-4e6e-b521-85ff39ac2f3e");
+
+        WebTestClient.ResponseSpec response = webTestClient.post()
+                .uri("/api/v1/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(buildUserRequest(idRolUser))
+                .exchange()
+                .expectStatus().isOk();
+
+        expectSecurityHeaders(response);
+    }
+
+
+    @Test
+    void rolSecurityHeadersShouldBePresent() {
+        webTestClient.post()
+                .uri("/api/v1/rol")
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().is4xxClientError()
+                .expectHeader().valueEquals("Content-Security-Policy",
+                        "default-src 'self'; frame-ancestors 'self'; form-action 'self'")
+                .expectHeader().valueEquals("Strict-Transport-Security", "max-age=31536000;")
+                .expectHeader().valueEquals("X-Content-Type-Options", "nosniff")
+                .expectHeader().valueEquals("Cache-Control", "no-store")
+                .expectHeader().valueEquals("Pragma", "no-cache")
+                .expectHeader().valueEquals("Referrer-Policy", "strict-origin-when-cross-origin");
     }
 
 }

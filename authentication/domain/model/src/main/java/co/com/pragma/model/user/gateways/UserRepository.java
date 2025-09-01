@@ -4,13 +4,17 @@ import co.com.pragma.model.user.User;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-/**
- * Interface for operations the persistence
- */
+import java.util.UUID;
+
 public interface UserRepository {
-    Mono < User > save(User user);
+    Mono<User> save(User user);
 
-    Mono < User > findByEmailAddress(String emailAddress);
+    Mono<User> findById(UUID id);
 
-    Flux < User > findAll();
+    Mono<User> findByEmailAddress(String emailAddress);
+
+    Mono<Void> deleteById(UUID id);
+
+    Flux<User> findAll();
+
 }

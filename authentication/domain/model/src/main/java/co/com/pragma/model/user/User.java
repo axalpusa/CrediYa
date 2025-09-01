@@ -8,17 +8,15 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
-/**
- * User model.
- */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class User {
-    private Long idUser;
+    private UUID idUser;
     private String firstName;
     private String lastName;
     private String emailAddress;
@@ -26,7 +24,7 @@ public class User {
     private String documentId;
     private LocalDate birthDate;
     private String phoneNumber;
+    private String password;
     private BigDecimal baseSalary;
-    private Integer idRol;
-
+    private UUID idRol;
 }

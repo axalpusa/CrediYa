@@ -1,17 +1,22 @@
 package co.com.pragma.api.dto.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
+@Setter
+@Builder
 public class UserResponseDTO {
-    Long idUser;
+    UUID idUser;
     String firstName;
     String lastName;
     String emailAddress;
@@ -20,5 +25,6 @@ public class UserResponseDTO {
     LocalDate birthDate;
     String phoneNumber;
     BigDecimal baseSalary;
-    Integer idRol;
+    String password;
+    UUID idRol;
 }
