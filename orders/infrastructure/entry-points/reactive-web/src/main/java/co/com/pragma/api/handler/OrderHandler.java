@@ -36,22 +36,22 @@ public class OrderHandler {
     private final AuthServiceClient authServiceClient;
 
     public Mono < ServerResponse > listenSaveOrder(ServerRequest request) {
-        return validateClientToken ( request )
-                .flatMap ( authUser ->
-                        request.bodyToMono ( OrderRequestDTO.class )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Request body cannot be empty" )
-                ) ) )
-                .flatMap ( dto -> Mono.justOrEmpty ( orderMapper.toModel ( dto ) ) )
-                .flatMap ( orderUseCase::saveOrder )
-                .map ( savedOrder -> {
-                    savedOrder.setIdStatus ( StatusEnum.REVISION.getId ( ) );
-                    return savedOrder;
-                } )
-                .flatMap ( savedOrder -> ServerResponse
-                        .created ( URI.create ( ApiPaths.ORDER + savedOrder.getIdOrder ( ) ) )
-                        .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( savedOrder ) )
+        return validateClientToken(request)
+                .flatMap(authUser ->
+                        request.bodyToMono(OrderRequestDTO.class)
+                                .switchIfEmpty(Mono.error(new ValidationException(
+                                        List.of("Request body cannot be empty")
+                                )))
+                                .flatMap(dto -> {
+                                    Order order = orderMapper.toModel(dto);
+                                    order.setIdStatus(StatusEnum.REVISION.getId());
+                                    return orderUseCase.saveOrder(order);
+                                })
+                                .flatMap(savedOrder ->
+                                        ServerResponse.created(URI.create(ApiPaths.ORDER + savedOrder.getIdOrder()))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .bodyValue(savedOrder)
+                                )
                 )
                 .onErrorResume ( ValidationException.class, ex ->
                         ServerResponse.badRequest ( )
