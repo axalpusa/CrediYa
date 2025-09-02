@@ -24,5 +24,13 @@ public class AuthServiceClient {
                 .bodyToMono(AuthResponseDTO.class);
     }
 
+    public Mono<AuthResponseDTO> validateToken(String token) {
+        return webClient.get()
+                .uri(ApiPaths.VALIDATE)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(AuthResponseDTO.class);
+    }
+
 
 }

@@ -23,5 +23,6 @@ public class ApiPaths {
     public static final String ORDER = "/api/v1/order";
     public static final String ORDERBYID = "/api/v1/order/{idOrder}";
     public static final String ORDERALL = "/api/v1/order/all";
+    public static final String REPORT = "/api/v1/order/report";
 
 }

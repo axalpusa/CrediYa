@@ -1,14 +1,13 @@
 package co.com.pragma.model.order.gateways;
 
+import co.com.pragma.model.dto.OrderPendingDTO;
 import co.com.pragma.model.order.Order;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
-/**
- * Interface for operations the persistence
- */
+
 public interface OrderRepository {
     Mono < Order > save(Order order);
 
@@ -18,5 +17,5 @@ public interface OrderRepository {
 
     Mono < Void > deleteById(UUID id);
 
-
+    Flux < OrderPendingDTO > findPendingOrders(String filterEmail, int page, int size);
 }

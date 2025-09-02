@@ -4,6 +4,7 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.dto.response.OrderResponseDTO;
+import co.com.pragma.api.dto.response.ReportResponseDTO;
 import co.com.pragma.api.enums.RolEnum;
 import co.com.pragma.api.enums.StatusEnum;
 import co.com.pragma.api.mapper.OrderMapperDTO;
@@ -36,7 +37,7 @@ public class OrderHandler {
     private final AuthServiceClient authServiceClient;
 
     public Mono < ServerResponse > listenSaveOrder(ServerRequest request) {
-        return validateClientToken(request)
+        return validateUserToken(request,RolEnum.CLIENT.getId ( ) )
                 .flatMap(authUser ->
                         request.bodyToMono(OrderRequestDTO.class)
                                 .switchIfEmpty(Mono.error(new ValidationException(
@@ -60,12 +61,12 @@ public class OrderHandler {
                 .onErrorResume( WebClientResponseException.Unauthorized.class, ex ->
                         ServerResponse.status(HttpStatus.UNAUTHORIZED)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", "Token inválido o expirado"))
+                                .bodyValue(Map.of("errors", "Token inválido o expirado"))
                 )
                 .onErrorResume(WebClientResponseException.Forbidden.class, ex ->
                         ServerResponse.status(HttpStatus.FORBIDDEN)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", "Acceso denegado"))
+                                .bodyValue(Map.of("errors", "Acceso denegado"))
                 )
                 .onErrorResume(ValidationException.class, ex ->
                         ServerResponse.badRequest()
@@ -75,17 +76,66 @@ public class OrderHandler {
                 .onErrorResume(RuntimeException.class, ex ->
                         ServerResponse.status(HttpStatus.UNAUTHORIZED)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", ex.getMessage()))
+                                .bodyValue(Map.of("errors", ex.getMessage()))
                 )
                 .onErrorResume(Exception.class, ex ->
                         ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .bodyValue(Map.of("message", "Unexpected error", "details", ex.getMessage()))
                 );
-
     }
 
-    private Mono < AuthResponseDTO > validateClientToken(ServerRequest request) {
+    public Mono < ServerResponse > listenReportOrder(ServerRequest request) {
+        String filterEmail = request.queryParam("email").orElse("");
+        int page = request.queryParam("page").map(Integer::parseInt).orElse(0);
+        int size = request.queryParam("size").map(Integer::parseInt).orElse(10);
+
+        return validateUserToken(request,RolEnum.ASSESSOR.getId ( ) )
+                .flatMap(authUser ->
+                        ServerResponse.ok ()
+                                .contentType ( MediaType.APPLICATION_JSON )
+                                .body ( orderUseCase.findPendingOrders ( filterEmail,page,size )
+                                        .map ( dto -> new ReportResponseDTO (
+                                                dto.getAmount (),
+                                                dto.getTermMonths (),
+                                                dto.getEmail (),
+                                                dto.getTypeLoan (),
+                                                dto.getInterestRate (),
+                                                dto.
+                                        ) ))
+
+                )
+                .onErrorResume ( ValidationException.class, ex ->
+                        ServerResponse.badRequest ( )
+                                .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
+                )
+                .onErrorResume( WebClientResponseException.Unauthorized.class, ex ->
+                        ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("errors", "Token inválido o expirado"))
+                )
+                .onErrorResume(WebClientResponseException.Forbidden.class, ex ->
+                        ServerResponse.status(HttpStatus.FORBIDDEN)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("errors", "Acceso denegado"))
+                )
+                .onErrorResume(ValidationException.class, ex ->
+                        ServerResponse.badRequest()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("errors", ex.getErrors()))
+                )
+                .onErrorResume(RuntimeException.class, ex ->
+                        ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("errors", ex.getMessage()))
+                )
+                .onErrorResume(Exception.class, ex ->
+                        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("message", "Unexpected error", "details", ex.getMessage()))
+                );
+    }
+    private Mono < AuthResponseDTO > validateUserToken(ServerRequest request,UUID idRol) {
         String authHeader = request.headers ( ).firstHeader ( "Authorization" );
         if ( authHeader == null || !authHeader.startsWith ( "Bearer " ) ) {
 
@@ -95,7 +145,7 @@ public class OrderHandler {
 
         return authServiceClient.validateToken ( token )
                 .flatMap ( user -> {
-                    boolean allowed = user.getIdRol ( ).equals ( RolEnum.CLIENT.getId ( ) );
+                    boolean allowed = user.getIdRol ( ).equals ( idRol );
                     if ( !allowed ) {
                         return Mono.error ( new RuntimeException ( "User is not allowed to create orders" ) );
                     }
