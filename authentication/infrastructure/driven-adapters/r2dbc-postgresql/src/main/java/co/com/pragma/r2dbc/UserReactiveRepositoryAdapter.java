@@ -1,10 +1,10 @@
-package co.com.pragma.r2dbc.reactiverepositoryadapter;
+package co.com.pragma.r2dbc;
 
 import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
 import co.com.pragma.r2dbc.entities.UserEntity;
 import co.com.pragma.r2dbc.helper.ReactiveAdapterOperations;
-import co.com.pragma.r2dbc.reactiverepository.UserReactiveRepository;
+import co.com.pragma.r2dbc.interfaces.UserReactiveRepository;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

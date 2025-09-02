@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Table("orders")
 @AllArgsConstructor
@@ -19,7 +20,7 @@ public class OrderEntity {
 
     @Id
     @Column("id_order")
-    private Long idOrder;
+    private UUID idOrder;
 
     @Column("amount")
     private BigDecimal amount;
@@ -34,9 +35,9 @@ public class OrderEntity {
     private String emailAddress;
 
     @Column("id_status")
-    private Integer idStatus;
+    private UUID idStatus;
 
     @Column("id_type_loan")
-    private Integer idTypeLoan;
+    private UUID idTypeLoan;
 
 }

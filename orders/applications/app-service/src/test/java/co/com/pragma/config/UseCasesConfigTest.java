@@ -1,6 +1,7 @@
 package co.com.pragma.config;
 
 import co.com.pragma.model.order.gateways.OrderRepository;
+import co.com.pragma.model.status.gateways.StatusRepository;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -38,6 +39,10 @@ public class UseCasesConfigTest {
         @Bean
         public TypeLoanRepository typeLoanRepository() {
             return Mockito.mock ( TypeLoanRepository.class );
+        }
+        @Bean
+        public StatusRepository statusRepository() {
+            return Mockito.mock ( StatusRepository.class );
         }
     }
 }

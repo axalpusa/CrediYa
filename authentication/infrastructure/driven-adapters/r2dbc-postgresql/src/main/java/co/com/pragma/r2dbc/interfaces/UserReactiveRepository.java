@@ -1,4 +1,4 @@
-package co.com.pragma.r2dbc.reactiverepository;
+package co.com.pragma.r2dbc.interfaces;
 
 import co.com.pragma.r2dbc.entities.UserEntity;
 import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;

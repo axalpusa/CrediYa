@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Table("type_loan")
 @AllArgsConstructor
@@ -19,7 +20,7 @@ public class TypeLoanEntity {
 
     @Id
     @Column("id_type_loan")
-    private Long idTypeLoan;
+    private UUID idTypeLoan;
 
     @Column("name")
     private String name;

@@ -1,5 +1,6 @@
 package co.com.pragma.api.handler;
 
+import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.UserRequestDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.mapper.UserMapperDTO;
@@ -32,76 +33,75 @@ public class UserHandler {
     private final UserMapperDTO userMapperDTO;
     private final PasswordEncoder passwordEncoder;
 
-    public Mono<ServerResponse> listenSaveUser(ServerRequest request) {
-        return request.bodyToMono(UserRequestDTO.class)
-                .switchIfEmpty(Mono.error(new ValidationException(
-                        List.of("Request body cannot be empty")
-                )))
-                .flatMap(dto -> Mono.justOrEmpty(userMapperDTO.toModel(dto)))
-                .map(user -> {
-                    user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public Mono < ServerResponse > listenSaveUser(ServerRequest request) {
+        return request.bodyToMono ( UserRequestDTO.class )
+                .switchIfEmpty ( Mono.error ( new ValidationException (
+                        List.of ( "Request body cannot be empty" )
+                ) ) )
+               // .map(userMapperDTO::toModel)
+                 .flatMap ( dto -> Mono.justOrEmpty ( userMapperDTO.toModel ( dto ) ) )
+                /*.map ( user -> {
+                    user.setPassword ( passwordEncoder.encode ( user.getPassword ( ) ) );
                     return user;
-                })
-                .flatMap(userUseCase::saveUser) // debe devolver Mono<User>, no null
-                .flatMap(user -> ServerResponse
-                        .created(URI.create("/api/v1/users/" + user.getIdUser()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(user))
-                .onErrorResume(ValidationException.class, ex ->
-                        ServerResponse.badRequest()
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("errors", ex.getErrors()))
+                } )*/
+                .flatMap ( userUseCase::saveUser )
+                .flatMap ( user -> ServerResponse
+                        .created ( URI.create ( ApiPaths.USERS + user.getIdUser ( ) ) )
+                        .contentType ( MediaType.APPLICATION_JSON )
+                        .bodyValue ( user ) )
+                .onErrorResume ( ValidationException.class, ex ->
+                        ServerResponse.badRequest ( )
+                                .contentType ( MediaType.APPLICATION_JSON )
+                                .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
                 )
-                .onErrorResume(e ->
-                        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of(
+                .onErrorResume ( e ->
+                        ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
+                                .contentType ( MediaType.APPLICATION_JSON )
+                                .bodyValue ( Map.of (
                                         "message", "Unexpected error occurred",
-                                        "details", e.getMessage()
-                                ))
+                                        "details", e.getMessage ( )
+                                ) )
                 );
     }
 
 
-
-
-    public Mono<ServerResponse> listenUpdateUser(ServerRequest serverRequest) {
-        return serverRequest.bodyToMono(UserResponseDTO.class)
-                .map(user -> objectMapper.convertValue(user, User.class))
-                .flatMap(userUseCase::updateUser)
-                .flatMap(savedUser -> ServerResponse.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(savedUser));
+    public Mono < ServerResponse > listenUpdateUser(ServerRequest serverRequest) {
+        return serverRequest.bodyToMono ( UserResponseDTO.class )
+                .map ( user -> objectMapper.convertValue ( user, User.class ) )
+                .flatMap ( userUseCase::updateUser )
+                .flatMap ( savedUser -> ServerResponse.ok ( )
+                        .contentType ( MediaType.APPLICATION_JSON )
+                        .bodyValue ( savedUser ) );
     }
 
-    public Mono<ServerResponse> listenGetAllUsers(ServerRequest request) {
-        return ServerResponse.ok()
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(userUseCase.getAllUsers(), UserResponseDTO.class);
+    public Mono < ServerResponse > listenGetAllUsers(ServerRequest request) {
+        return ServerResponse.ok ( )
+                .contentType ( MediaType.TEXT_EVENT_STREAM )
+                .body ( userUseCase.getAllUsers ( ), UserResponseDTO.class );
     }
 
-    public Mono<ServerResponse> listenGetUserById(ServerRequest serverRequest) {
-        return Mono.fromCallable(() -> serverRequest.pathVariable("idUser"))
-                .map(String::trim)
-                .filter(item -> !item.isBlank())
-                .map(UUID::fromString)
-                .flatMap(userUseCase::getUserById)
-                .flatMap(user -> ServerResponse.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(user))
-                .switchIfEmpty(ServerResponse.notFound().build());
+    public Mono < ServerResponse > listenGetUserById(ServerRequest serverRequest) {
+        return Mono.fromCallable ( () -> serverRequest.pathVariable ( "idUser" ) )
+                .map ( String::trim )
+                .filter ( item -> !item.isBlank ( ) )
+                .map ( UUID::fromString )
+                .flatMap ( userUseCase::getUserById )
+                .flatMap ( user -> ServerResponse.ok ( )
+                        .contentType ( MediaType.APPLICATION_JSON )
+                        .bodyValue ( user ) )
+                .switchIfEmpty ( ServerResponse.notFound ( ).build ( ) );
     }
 
-    public Mono<ServerResponse> listenDeleteUser(ServerRequest serverRequest) {
+    public Mono < ServerResponse > listenDeleteUser(ServerRequest serverRequest) {
 
-        return Mono.fromCallable(() -> serverRequest.pathVariable("idUser"))
-                .map(String::trim)
-                .filter(item -> !item.isBlank())
-                .map(UUID::fromString)
-                .flatMap(id -> userUseCase.deleteUserById(id)
-                        .then(ServerResponse.noContent().build())
+        return Mono.fromCallable ( () -> serverRequest.pathVariable ( "idUser" ) )
+                .map ( String::trim )
+                .filter ( item -> !item.isBlank ( ) )
+                .map ( UUID::fromString )
+                .flatMap ( id -> userUseCase.deleteUserById ( id )
+                        .then ( ServerResponse.noContent ( ).build ( ) )
                 )
-                .switchIfEmpty(ServerResponse.notFound().build());
+                .switchIfEmpty ( ServerResponse.notFound ( ).build ( ) );
     }
 
 }

@@ -25,6 +25,6 @@ public class UserResponseDTO {
     LocalDate birthDate;
     String phoneNumber;
     BigDecimal baseSalary;
-    String password;
+    //String password;
     UUID idRol;
 }

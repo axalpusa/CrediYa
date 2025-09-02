@@ -4,6 +4,7 @@ import co.com.pragma.api.enums.RolEnum;
 import co.com.pragma.api.jwt.JwtAuthenticationFilter;
 import co.com.pragma.api.jwt.JwtService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,6 +22,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+@Slf4j
 @Configuration
 @EnableWebFluxSecurity
 @AllArgsConstructor
@@ -30,66 +32,94 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder ( );
     }
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable) // deshabilita basic
-                .authorizeExchange(auth -> auth
-                        // permitir login sin token
-                        .pathMatchers(HttpMethod.POST, "/api/v1/login").permitAll()
-                        // registrar usuarios: solo ADMIN o ASESOR
-                        .pathMatchers(HttpMethod.POST, "/api/v1/users").access(this::isAdminOrAsesor)
-                        // crear préstamos: solo CLIENTE y para sí mismo
-                        .pathMatchers(HttpMethod.POST, "/api/v1/order/{userId}").access(this::isClientForSelf)
-                        // el resto requiere autenticación
-                        .anyExchange().authenticated()
-                )
-                .addFilterAt(jwtAuthenticationFilter(), SecurityWebFiltersOrder.AUTHENTICATION)
-                .build();
+                .csrf ( ServerHttpSecurity.CsrfSpec::disable )
+                .httpBasic ( ServerHttpSecurity.HttpBasicSpec::disable )
+                .authorizeExchange ( auth -> {
+                    configurePublicEndpoints ( auth );
+                    configureUserEndpoints ( auth );
+                    configureRolEndpoints ( auth );
+                    configureOtherEndpoints ( auth );
+                } )
+                .addFilterAt ( jwtAuthenticationFilter ( ), SecurityWebFiltersOrder.AUTHENTICATION )
+                .build ( );
     }
+
+    private void configurePublicEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec auth) {
+        auth.pathMatchers ( HttpMethod.POST, ApiPaths.LOGIN ).permitAll ( );
+        auth.pathMatchers (
+                "/swagger-ui.html",
+                "/swagger-ui/**",
+                "/v3/api-docs/**",
+                "/api/doc/**",
+                "/api/doc/swagger-ui.html",
+                "/api/doc/api-docs",
+                "/webjars/swagger-ui/**"
+        ).permitAll ( );
+    }
+
+    private void configureUserEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec auth) {
+        auth.pathMatchers ( HttpMethod.POST, ApiPaths.USERS ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.PUT, ApiPaths.USERS ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.DELETE, ApiPaths.USERSBYID ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.GET, ApiPaths.USERSALL ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.GET, ApiPaths.USERSBYID ).access ( this::isAdminOrAsesor );
+    }
+
+    private void configureRolEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec auth) {
+        auth.pathMatchers ( HttpMethod.POST, ApiPaths.ROL ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.PUT, ApiPaths.ROL ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.DELETE, ApiPaths.ROLBYID ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.GET, ApiPaths.ROLLALL ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.GET, ApiPaths.ROLBYID ).access ( this::isAdminOrAsesor );
+    }
+
+    private void configureOtherEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec auth) {
+        auth.anyExchange ( ).authenticated ( );
+    }
+
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtService);
+        return new JwtAuthenticationFilter ( jwtService );
     }
 
-    private Mono<AuthorizationDecision> isAdminOrAsesor(Mono<Authentication> authenticationMono,
-                                                        AuthorizationContext context) {
+    private Mono < AuthorizationDecision > isAdminOrAsesor(Mono < Authentication > authenticationMono,
+                                                           AuthorizationContext context) {
         return authenticationMono
-                .doOnNext(auth -> System.out.println("[DEBUG] Authentication object: " + auth))
-                .map(auth -> {
-                    // Revisar credenciales
-                    Object credentials = auth.getCredentials();
-                    if (credentials == null) {
-                        System.out.println("[DEBUG] No credentials found, denying access");
-                        return new AuthorizationDecision(false);
+                .doOnNext ( auth -> log.info ( "[DEBUG] Authentication object: " + auth ) )
+                .map ( auth -> {
+                    Object credentials = auth.getCredentials ( );
+                    if ( credentials == null ) {
+                        log.info ( "[DEBUG] No credentials found, denying access" );
+                        return new AuthorizationDecision ( false );
                     }
                     String token = (String) credentials;
-                    UUID roleId = jwtService.extractRoleId(token);
-                    boolean allowed = roleId.equals(RolEnum.ADMIN.getId()) || roleId.equals(RolEnum.ASSESSOR.getId());
-                    return new AuthorizationDecision(allowed);
-                })
-                .defaultIfEmpty(new AuthorizationDecision(false)) // si no hay auth, negar
-                .doOnNext(decision -> System.out.println("[DEBUG] AuthorizationDecision: " + decision.isGranted()));
+                    UUID roleId = jwtService.extractRoleId ( token );
+                    boolean allowed = roleId.equals ( RolEnum.ADMIN.getId ( ) ) || roleId.equals ( RolEnum.ASSESSOR.getId ( ) );
+                    return new AuthorizationDecision ( allowed );
+                } )
+                .defaultIfEmpty ( new AuthorizationDecision ( false ) )
+                .doOnNext ( decision -> log.info ( "[DEBUG] AuthorizationDecision: " + decision.isGranted ( ) ) );
     }
 
 
-    private Mono<AuthorizationDecision> isClientForSelf(Mono<Authentication> authenticationMono,
-                                                        AuthorizationContext context) {
-        return authenticationMono.map(auth -> {
-            String token = (String) auth.getCredentials();
-            UUID roleId = jwtService.extractRoleId(token);
-            UUID userId = jwtService.extractUserId(token);
+    private Mono < AuthorizationDecision > isClientForSelf(Mono < Authentication > authenticationMono,
+                                                           AuthorizationContext context) {
+        return authenticationMono.map ( auth -> {
+            String token = (String) auth.getCredentials ( );
+            UUID roleId = jwtService.extractRoleId ( token );
+            UUID userId = jwtService.extractUserId ( token );
 
-            // userId del path (ej: /loans/create/{userId})
-            String pathUserId = context.getVariables().get("userId").toString();
+            String pathUserId = context.getVariables ( ).get ( "userId" ).toString ( );
 
-            boolean allowed = roleId.equals(RolEnum.CLIENT.getId()) && userId.toString().equals(pathUserId);
-            return new AuthorizationDecision(allowed);
-        }).defaultIfEmpty(new AuthorizationDecision(false));
+            boolean allowed = roleId.equals ( RolEnum.CLIENT.getId ( ) ) && userId.toString ( ).equals ( pathUserId );
+            return new AuthorizationDecision ( allowed );
+        } ).defaultIfEmpty ( new AuthorizationDecision ( false ) );
     }
 
 }

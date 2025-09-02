@@ -20,6 +20,7 @@ public class SecurityHeadersConfig implements WebFilter {
         headers.set("Cache-Control", "no-store");
         headers.set("Pragma", "no-cache");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+        headers.set("X-Frame-Options", "DENY");
         return chain.filter(exchange);
     }
 }

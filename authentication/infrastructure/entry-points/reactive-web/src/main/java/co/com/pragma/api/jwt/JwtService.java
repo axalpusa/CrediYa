@@ -1,6 +1,7 @@
 package co.com.pragma.api.jwt;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,14 +20,14 @@ public class JwtService {
                 .setSubject(String.valueOf(idUSer))
                 .claim("idRol", String.valueOf(idRol))
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + props.getExpirationMs()))
-                .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, props.getSecret())
+                .setExpiration(new Date(System.currentTimeMillis() + props.expirationMs ()))
+                .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, props.secret ())
                 .compact();
     }
 
     public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(props.getSecret())
+                .setSigningKey(props.secret ())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -40,4 +41,14 @@ public class JwtService {
         return UUID.fromString(extractAllClaims(token).get("idRol", String.class));
     }
 
+    public boolean isTokenValid(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            return claims.getExpiration().after(new Date());
+        } catch (ExpiredJwtException ex) {
+            return false;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
 }

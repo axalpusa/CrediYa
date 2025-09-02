@@ -22,11 +22,9 @@ management:
         enabled: true
 springdoc:
   api-docs:
-    enabled: true
-    path: /v3/api-docs
+    path: /api/doc/api-docs
   swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
+    path: /api/doc/swagger-ui.html
 adapters:
   r2dbc:
     host: "localhost"
@@ -41,4 +39,4 @@ logging:
   level:
     root: INFO
   file:
-    name: logs/crediya.log
+    name: logs/crediya_orders.log

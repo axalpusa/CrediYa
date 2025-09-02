@@ -4,11 +4,16 @@ import co.com.pragma.model.typeloan.TypeLoan;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-/**
- * Interface for operations the persistence
- */
+import java.util.UUID;
+
 public interface TypeLoanRepository {
-    Mono < TypeLoan > getByIdTypeLoan(Long idTypeLoan);
 
     Flux < TypeLoan > findAll();
+
+    Mono < TypeLoan > save(TypeLoan typeLoan);
+
+    Mono < TypeLoan > findById(UUID id);
+
+    Mono < Void > deleteById(UUID id);
+
 }

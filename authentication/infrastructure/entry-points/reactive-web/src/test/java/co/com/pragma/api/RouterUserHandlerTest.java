@@ -1,5 +1,6 @@
 package co.com.pragma.api;
 
+import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.UserRequestDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.handler.UserHandler;
@@ -111,7 +112,7 @@ class RouterUserHandlerTest {
         lenient().when(userMapper.toResponse(any(User.class))).thenReturn(response);
 
         webTestClient.post()
-                .uri("/api/v1/users")
+                .uri( ApiPaths.USERS )
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(req)
                 .exchange()
@@ -131,7 +132,7 @@ class RouterUserHandlerTest {
         when(userUseCase.saveUser(any(User.class)))
                 .thenReturn(Mono.error(new ValidationException(List.of("First name is required."))));
         webTestClient.post()
-                .uri("/api/v1/users")
+                .uri(ApiPaths.USERS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(req)
                 .exchange()
@@ -151,7 +152,7 @@ class RouterUserHandlerTest {
                 .thenReturn(Mono.error(new ValidationException(List.of("Email address duplicate."))));
 
         webTestClient.post()
-                .uri("/api/v1/users")
+                .uri(ApiPaths.USERS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(req)
                 .exchange()

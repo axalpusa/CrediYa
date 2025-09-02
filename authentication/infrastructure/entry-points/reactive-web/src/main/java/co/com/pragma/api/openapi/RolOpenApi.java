@@ -1,9 +1,11 @@
 package co.com.pragma.api.openapi;
 
+import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.RolRequestDTO;
-import co.com.pragma.api.dto.request.UserRequestDTO;
-import co.com.pragma.api.handler.UserHandler;
+import co.com.pragma.api.handler.RolHandler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -25,15 +27,15 @@ public class RolOpenApi {
     @Bean
     @RouterOperations({
             @RouterOperation(
-                    path = "/api/v1/rol",
+                    path = ApiPaths.ROL,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.POST,
-                    beanClass = UserHandler.class,
+                    beanClass = RolHandler.class,
                     beanMethod = "listenSaveRol",
                     operation = @Operation(
-                            operationId = "saveUser",
-                            summary = "Create a user",
-                            tags = {"Users"},
+                            operationId = "saveRol",
+                            summary = "Create a rol",
+                            tags = {"Rol"},
                             requestBody = @RequestBody(
                                     required = true,
                                     content = @Content(
@@ -48,19 +50,47 @@ public class RolOpenApi {
                     )
             ),
             @RouterOperation(
-                    path = "/api/v1/rol/all",
+                    path = ApiPaths.ROLLALL,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
-                    beanClass = UserHandler.class,
+                    beanClass = RolHandler.class,
                     beanMethod = "listenGetAllRols",
                     operation = @Operation(
                             operationId = "getAllRol",
                             summary = "Listar todos los roles",
                             tags = {"Rol"}
                     )
+            ),
+            @RouterOperation(
+                    path = ApiPaths.ROLBYID,
+                    produces = {MediaType.APPLICATION_JSON_VALUE},
+                    method = RequestMethod.GET,
+                    beanClass = RolHandler.class,
+                    beanMethod = "listenGetRolById",
+                    operation = @Operation(
+                            operationId = "getRolById",
+                            summary = "Get rol by ID",
+                            tags = {"Rol"},
+                            parameters = {
+                                    @Parameter(
+                                            name = "idRol",
+                                            description = "ID rol (UUID)",
+                                            required = true,
+                                            in = ParameterIn.PATH,
+                                            schema = @Schema(type = "string", format = "uuid")
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Rol found"),
+                                    @ApiResponse(responseCode = "404", description = "Rol not found")
+                            }
+                    )
             )
     })
-    public RouterFunction<ServerResponse> rolRoutesDoc() {
-        return RouterFunctions.route(RequestPredicates.GET("/__dummy__"), req -> ServerResponse.ok().build());
+    public RouterFunction < ServerResponse > rolRoutesDoc() {
+        return RouterFunctions.route (
+                RequestPredicates.GET ( "/__dummy__" ),
+                req -> ServerResponse.ok ( ).build ( )
+        );
     }
 }

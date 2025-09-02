@@ -1,90 +1,145 @@
 package co.com.pragma.api.handler;
 
+import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
+import co.com.pragma.api.dto.response.AuthResponseDTO;
+import co.com.pragma.api.dto.response.OrderResponseDTO;
+import co.com.pragma.api.enums.RolEnum;
+import co.com.pragma.api.enums.StatusEnum;
 import co.com.pragma.api.mapper.OrderMapperDTO;
+import co.com.pragma.api.services.AuthServiceClient;
 import co.com.pragma.model.order.Order;
-import co.com.pragma.usecase.order.interfaces.IOrderUseCase;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Validator;
+import co.com.pragma.usecase.order.OrderUseCase;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Set;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
-@Tag(name = "Order", description = "Operations related to order")
 public class OrderHandler {
 
-    private final IOrderUseCase iorderUseCase;
-    private final Validator validator;
-    private final OrderMapperDTO orderMapperDTO;
+    private final OrderUseCase orderUseCase;
+    private final ObjectMapper objectMapper;
+    private final OrderMapperDTO orderMapper;
+    private final AuthServiceClient authServiceClient;
 
-    /**
-     * Handles the HTTP request to save an order.
-     *
-     * @param request the incoming server request containing a OrderRequestDTO in the body
-     * @return a Mono containing the ServerResponse with the saved order or an error
-     */
-    public Mono < ServerResponse > saveOrderCase(ServerRequest request) {
-        return request.bodyToMono ( OrderRequestDTO.class )
-                .switchIfEmpty ( Mono.error ( new IllegalArgumentException ( "Request body cannot be empty" ) ) )
-                .flatMap ( this::validateOrderRequest )
-                .flatMap ( this::saveAndRequest );
-    }
-
-    /**
-     * Validates the order request DTO.
-     *
-     * @param dto the order request DTO to validate
-     * @return a Mono containing the validated DTO
-     * @throws ConstraintViolationException if any validation errors occur
-     */
-    private Mono < OrderRequestDTO > validateOrderRequest(OrderRequestDTO dto) {
-        Set < ConstraintViolation < OrderRequestDTO > > violations = validator.validate ( dto );
-        if ( !violations.isEmpty ( ) ) {
-            String errorMsg = violations.stream ( )
-                    .map ( ConstraintViolation::getMessage )
-                    .reduce ( (a, b) -> a + "; " + b )
-                    .orElse ( "Invalid data" );
-            log.warn ( "Validation failed: {}", errorMsg );
-            throw new ConstraintViolationException ( violations );
-        }
-        return Mono.just ( dto );
-    }
-
-    /**
-     * Registers the order and prepares the server response.
-     *
-     * @param dto the validated order request DTO
-     * @return a Mono containing the ServerResponse with the saved order
-     */
-    private Mono < ServerResponse > saveAndRequest(OrderRequestDTO dto) {
-        Order order = orderMapperDTO.toModel ( dto );
-        return iorderUseCase.saveOrder ( order )
-                .doOnSuccess ( o -> log.info ( "Order successfully registered: {}", o ) )
-                .map ( orderMapperDTO::toResponse )
-                .flatMap ( o -> ServerResponse.ok ( )
+    public Mono < ServerResponse > listenSaveOrder(ServerRequest request) {
+        return validateClientToken ( request )
+                .flatMap ( authUser ->
+                        request.bodyToMono ( OrderRequestDTO.class )
+                .switchIfEmpty ( Mono.error ( new ValidationException (
+                        List.of ( "Request body cannot be empty" )
+                ) ) )
+                .flatMap ( dto -> Mono.justOrEmpty ( orderMapper.toModel ( dto ) ) )
+                .flatMap ( orderUseCase::saveOrder )
+                .map ( savedOrder -> {
+                    savedOrder.setIdStatus ( StatusEnum.REVISION.getId ( ) );
+                    return savedOrder;
+                } )
+                .flatMap ( savedOrder -> ServerResponse
+                        .created ( URI.create ( ApiPaths.ORDER + savedOrder.getIdOrder ( ) ) )
                         .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( o ) );
+                        .bodyValue ( savedOrder ) )
+                )
+                .onErrorResume ( ValidationException.class, ex ->
+                        ServerResponse.badRequest ( )
+                                .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
+                )
+                .onErrorResume( WebClientResponseException.Unauthorized.class, ex ->
+                        ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("error", "Token inválido o expirado"))
+                )
+                .onErrorResume(WebClientResponseException.Forbidden.class, ex ->
+                        ServerResponse.status(HttpStatus.FORBIDDEN)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("error", "Acceso denegado"))
+                )
+                .onErrorResume(ValidationException.class, ex ->
+                        ServerResponse.badRequest()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("errors", ex.getErrors()))
+                )
+                .onErrorResume(RuntimeException.class, ex ->
+                        ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("error", ex.getMessage()))
+                )
+                .onErrorResume(Exception.class, ex ->
+                        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("message", "Unexpected error", "details", ex.getMessage()))
+                );
+
     }
 
-    /**
-     * Registers the order and prepares the server response.
-     *
-     * @param request the validated order request DTO
-     * @return a Mono containing the ServerResponse with all orders
-     */
-    public Mono < ServerResponse > getAllOrders(ServerRequest request) {
-        return ServerResponse.ok ( ).body ( iorderUseCase.getAllOrders ( ), Order.class );
+    private Mono < AuthResponseDTO > validateClientToken(ServerRequest request) {
+        String authHeader = request.headers ( ).firstHeader ( "Authorization" );
+        if ( authHeader == null || !authHeader.startsWith ( "Bearer " ) ) {
+
+            return Mono.error ( new RuntimeException ( "Authorization header missing or invalid" ) );
+        }
+        String token = authHeader.substring ( 7 );
+
+        return authServiceClient.validateToken ( token )
+                .flatMap ( user -> {
+                    boolean allowed = user.getIdRol ( ).equals ( RolEnum.CLIENT.getId ( ) );
+                    if ( !allowed ) {
+                        return Mono.error ( new RuntimeException ( "User is not allowed to create orders" ) );
+                    }
+                    return Mono.just ( user );
+                } );
+    }
+
+    public Mono < ServerResponse > listenUpdateOrder(ServerRequest request) {
+        return request.bodyToMono ( OrderResponseDTO.class )
+                .map ( order -> objectMapper.convertValue ( order, Order.class ) )
+                .flatMap ( orderUseCase::updateOrder )
+                .flatMap ( savedOrder -> ServerResponse.ok ( )
+                        .contentType ( MediaType.APPLICATION_JSON )
+                        .bodyValue ( savedOrder ) );
+    }
+
+    public Mono < ServerResponse > listenGetAllOrders(ServerRequest request) {
+        return ServerResponse.ok ( )
+                .contentType ( MediaType.TEXT_EVENT_STREAM )
+                .body ( orderUseCase.getAllOrders ( ), OrderResponseDTO.class );
+    }
+
+    public Mono < ServerResponse > listenGetOrderById(ServerRequest request) {
+        return Mono.fromCallable ( () -> request.pathVariable ( "idOrder" ) )
+                .map ( String::trim )
+                .filter ( item -> !item.isBlank ( ) )
+                .map ( UUID::fromString )
+                .flatMap ( orderUseCase::getOrderById )
+                .flatMap ( order -> ServerResponse.ok ( )
+                        .contentType ( MediaType.APPLICATION_JSON )
+                        .bodyValue ( order ) )
+                .switchIfEmpty ( ServerResponse.notFound ( ).build ( ) );
+    }
+
+    public Mono < ServerResponse > listenDeleteOrder(ServerRequest request) {
+
+        return Mono.fromCallable ( () -> request.pathVariable ( "idOrder" ) )
+                .map ( String::trim )
+                .filter ( item -> !item.isBlank ( ) )
+                .map ( UUID::fromString )
+                .flatMap ( id -> orderUseCase.deleteOrderById ( id )
+                        .then ( ServerResponse.noContent ( ).build ( ) )
+                )
+                .switchIfEmpty ( ServerResponse.notFound ( ).build ( ) );
     }
 
 }

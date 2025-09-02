@@ -1,5 +1,6 @@
 package co.com.pragma.api;
 
+import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.RolRequestDTO;
 import co.com.pragma.api.dto.response.RolResponseDTO;
 import co.com.pragma.api.handler.RolHandler;
@@ -83,7 +84,7 @@ class RouterRolHandlerTest {
         lenient().when(rolMapper.toResponse(any(Rol.class))).thenReturn(response);
 
         webTestClient.post()
-                .uri("/api/v1/rol")
+                .uri( ApiPaths.ROL )
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(req)
                 .exchange()
@@ -103,7 +104,7 @@ class RouterRolHandlerTest {
         when(rolUseCase.saveRol(any(Rol.class)))
                 .thenReturn(Mono.error(new ValidationException(List.of("Name is required."))));
         webTestClient.post()
-                .uri("/api/v1/rol")
+                .uri(ApiPaths.ROL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(req)
                 .exchange()
@@ -111,6 +112,5 @@ class RouterRolHandlerTest {
                 .expectBody()
                 .jsonPath("$.errors[0]").isEqualTo("Name is required.");
     }
-
 
 }

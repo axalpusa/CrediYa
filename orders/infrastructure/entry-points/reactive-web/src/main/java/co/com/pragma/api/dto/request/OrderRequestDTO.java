@@ -1,25 +1,25 @@
 package co.com.pragma.api.dto.request;
 
-import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
-@Data
+import java.util.UUID;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Builder
 public class OrderRequestDTO {
 
-    @NotNull(message = "Amount is required")
     BigDecimal amount;
-
-    @NotNull(message = "Term months is required")
-    @Positive(message = "The term months must be greater than 0")
     Integer termMonths;
-
-    @NotBlank(message = "Document id is required")
     String documentId;
-
-    @NotBlank(message = "Email address is required")
     String emailAddress;
-
-    @NotNull(message = "Type loan is required")
-    Integer idTypeLoan;
+    UUID idTypeLoan;
+    UUID idStatus;
 }

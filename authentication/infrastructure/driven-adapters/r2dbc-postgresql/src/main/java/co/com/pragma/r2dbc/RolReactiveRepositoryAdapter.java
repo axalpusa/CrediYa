@@ -1,10 +1,10 @@
-package co.com.pragma.r2dbc.reactiverepositoryadapter;
+package co.com.pragma.r2dbc;
 
 import co.com.pragma.model.rol.Rol;
 import co.com.pragma.model.rol.gateways.RolRepository;
 import co.com.pragma.r2dbc.entities.RolEntity;
 import co.com.pragma.r2dbc.helper.ReactiveAdapterOperations;
-import co.com.pragma.r2dbc.reactiverepository.RolReactiveRepository;
+import co.com.pragma.r2dbc.interfaces.RolReactiveRepository;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

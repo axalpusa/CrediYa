@@ -5,7 +5,9 @@ import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
-public interface OrderReactiveRepository extends ReactiveCrudRepository < OrderEntity, Long >, ReactiveQueryByExampleExecutor < OrderEntity > {
+public interface OrderReactiveRepository extends ReactiveCrudRepository < OrderEntity, UUID >, ReactiveQueryByExampleExecutor < OrderEntity > {
 
 }

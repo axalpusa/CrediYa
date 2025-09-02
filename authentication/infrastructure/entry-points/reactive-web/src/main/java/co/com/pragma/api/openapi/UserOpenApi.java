@@ -1,5 +1,6 @@
 package co.com.pragma.api.openapi;
 
+import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.UserRequestDTO;
 import co.com.pragma.api.handler.UserHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +27,7 @@ public class UserOpenApi {
     @Bean
     @RouterOperations({
             @RouterOperation(
-                    path = "/api/v1/users",
+                    path = ApiPaths.USERS,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.POST,
                     beanClass = UserHandler.class,
@@ -49,7 +50,7 @@ public class UserOpenApi {
                     )
             ),
             @RouterOperation(
-                    path = "/api/v1/users/all",
+                    path = ApiPaths.USERSALL,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = UserHandler.class,
@@ -61,7 +62,7 @@ public class UserOpenApi {
                     )
             ),
             @RouterOperation(
-                    path = "/api/v1/users/byId/{idUser}",
+                    path = ApiPaths.USERSBYID,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = UserHandler.class,
@@ -69,7 +70,7 @@ public class UserOpenApi {
                     operation = @Operation(
                             operationId = "getUserById",
                             summary = "Get user by ID",
-                            tags = {"User"},
+                            tags = {"Users"},
                             parameters = {
                                     @Parameter(
                                             name = "idUser",
@@ -86,10 +87,10 @@ public class UserOpenApi {
                     )
             )
     })
-    public RouterFunction<ServerResponse> userRoutesDoc() {
-        return RouterFunctions.route(
-                RequestPredicates.GET("/__dummy__"),
-                req -> ServerResponse.ok().build()
+    public RouterFunction < ServerResponse > userRoutesDoc() {
+        return RouterFunctions.route (
+                RequestPredicates.GET ( "/__dummy__" ),
+                req -> ServerResponse.ok ( ).build ( )
         );
     }
 }

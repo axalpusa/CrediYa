@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -14,11 +15,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class Order {
-    private Long idOrder;
+    private UUID idOrder;
     private BigDecimal amount;
     private Integer termMonths;
     private String documentId;
     private String emailAddress;
-    private Integer idStatus;
-    private Integer idTypeLoan;
+    private UUID idStatus;
+    private UUID idTypeLoan;
 }

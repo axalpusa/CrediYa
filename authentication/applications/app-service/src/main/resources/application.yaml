@@ -38,7 +38,7 @@ logging:
   level:
     root: INFO
   file:
-    name: logs/crediya.log
+    name: logs/crediya_auth.log
 jwt:
   secret: "HsTqW3BTS2qT/U8L8K5l8wV7Q8H3q0EoM7R0JbHcBjc="
-  expiration-ms: 3600000   # 1 hora en milisegundos
+  expiration-ms: 3600000

@@ -25,4 +25,6 @@ create table users
 );
 
 
+alter table users add column password character varying;
+
 
