@@ -7,6 +7,7 @@ import co.com.pragma.api.handler.RolHandler;
 import co.com.pragma.api.mapper.RolMapperDTO;
 import co.com.pragma.api.routerrest.RolRouterRest;
 import co.com.pragma.model.rol.Rol;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.rol.RolUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.ValidationException;
@@ -36,13 +37,15 @@ class RouterRolHandlerTest {
 
     private ObjectMapper objectMapper;
 
+    private TransactionalAdapter transactionalAdapter;
+
     @BeforeEach
     void setup() {
         rolUseCase = mock(RolUseCase.class);
         rolMapper = mock(RolMapperDTO.class);
         objectMapper = mock(ObjectMapper.class);
-
-        RolHandler rolHandler = new RolHandler(rolUseCase, objectMapper, rolMapper);
+        transactionalAdapter = mock ( TransactionalAdapter.class );
+        RolHandler rolHandler = new RolHandler(rolUseCase, objectMapper, rolMapper,transactionalAdapter);
         RolRouterRest rolRouterRest = new RolRouterRest();
 
         webTestClient = WebTestClient.bindToRouterFunction(
@@ -82,7 +85,8 @@ class RouterRolHandlerTest {
         lenient().when(rolMapper.toModel(any(RolRequestDTO.class))).thenReturn(toSave);
         lenient().when(rolUseCase.saveRol(any(Rol.class))).thenReturn(Mono.just(saved));
         lenient().when(rolMapper.toResponse(any(Rol.class))).thenReturn(response);
-
+        lenient().when(transactionalAdapter.executeInTransaction(any(Mono.class)))
+                .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));
         webTestClient.post()
                 .uri( ApiPaths.ROL )
                 .contentType(MediaType.APPLICATION_JSON)
@@ -103,6 +107,8 @@ class RouterRolHandlerTest {
         when(rolMapper.toModel(any(RolRequestDTO.class))).thenReturn(invalidRol);
         when(rolUseCase.saveRol(any(Rol.class)))
                 .thenReturn(Mono.error(new ValidationException(List.of("Name is required."))));
+        when(transactionalAdapter.executeInTransaction(any(Mono.class)))
+                .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));
         webTestClient.post()
                 .uri(ApiPaths.ROL)
                 .contentType(MediaType.APPLICATION_JSON)

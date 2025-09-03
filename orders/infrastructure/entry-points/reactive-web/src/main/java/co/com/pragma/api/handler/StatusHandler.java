@@ -5,6 +5,7 @@ import co.com.pragma.api.dto.request.StatusRequestDTO;
 import co.com.pragma.api.dto.response.StatusResponseDTO;
 import co.com.pragma.api.mapper.StatusMapperDTO;
 import co.com.pragma.model.status.Status;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.status.StatusUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.ValidationException;
@@ -28,29 +29,32 @@ public class StatusHandler {
     private final StatusUseCase statusUseCase;
     private final ObjectMapper objectMapper;
     private final StatusMapperDTO statusMapper;
+    private final TransactionalAdapter transactionalAdapter;
 
     public Mono < ServerResponse > listenSaveStatus(ServerRequest request) {
-        return request.bodyToMono ( StatusRequestDTO.class )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Request body cannot be empty" )
-                ) ) )
-                .flatMap ( dto -> Mono.justOrEmpty ( statusMapper.toModel ( dto ) ) )
-                .flatMap ( statusUseCase::saveStatus )
-                .flatMap ( status -> ServerResponse
-                        .created ( URI.create ( ApiPaths.STATUS + status.getIdStatus ( ) ) )
-                        .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( status ) )
-                .onErrorResume ( ValidationException.class, ex ->
-                        ServerResponse.badRequest ( )
-                                .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                ).onErrorResume ( e ->
-                        ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
+        return transactionalAdapter.executeInTransaction (
+                request.bodyToMono ( StatusRequestDTO.class )
+                        .switchIfEmpty ( Mono.error ( new ValidationException (
+                                List.of ( "Request body cannot be empty" )
+                        ) ) )
+                        .flatMap ( dto -> Mono.justOrEmpty ( statusMapper.toModel ( dto ) ) )
+                        .flatMap ( statusUseCase::saveStatus )
+                        .flatMap ( status -> ServerResponse
+                                .created ( URI.create ( ApiPaths.STATUS + status.getIdStatus ( ) ) )
                                 .contentType ( MediaType.APPLICATION_JSON )
-                                .bodyValue ( Map.of (
-                                        "message", "Unexpected error occurred",
-                                        "details", e.getMessage ( )
-                                ) )
-                );
+                                .bodyValue ( status ) )
+                        .onErrorResume ( ValidationException.class, ex ->
+                                ServerResponse.badRequest ( )
+                                        .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
+                        ).onErrorResume ( e ->
+                                ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
+                                        .contentType ( MediaType.APPLICATION_JSON )
+                                        .bodyValue ( Map.of (
+                                                "message", "Unexpected error occurred",
+                                                "details", e.getMessage ( )
+                                        ) )
+                        )
+        );
     }
 
     public Mono < ServerResponse > listenUpdateStatus(ServerRequest request) {

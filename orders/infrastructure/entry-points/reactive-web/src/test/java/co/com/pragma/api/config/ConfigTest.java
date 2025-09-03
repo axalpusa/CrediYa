@@ -10,6 +10,7 @@ import co.com.pragma.api.mapper.OrderMapperDTO;
 import co.com.pragma.api.routerrest.OrderRouterRest;
 import co.com.pragma.api.services.AuthServiceClient;
 import co.com.pragma.model.order.Order;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.order.OrderUseCase;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,9 @@ class ConfigTest {
     @Autowired
     private OrderUseCase orderUseCase;
 
+    @Autowired
+    private TransactionalAdapter transactionalAdapter;
+
     @TestConfiguration
     static class MockBeans {
 
@@ -75,6 +79,12 @@ class ConfigTest {
         OrderMapperDTO orderDTOMapper() {
             return mock(OrderMapperDTO.class);
         }
+
+        @Bean
+        TransactionalAdapter transactionalAdapter() {
+            return mock(TransactionalAdapter.class);
+        }
+
     }
 
     private OrderRequestDTO buildOrderRequest() {
@@ -116,6 +126,8 @@ class ConfigTest {
                         .name("axel puertas")
                         .token("Bearer faketoken123")
                         .build()));
+        when(transactionalAdapter.executeInTransaction(any(Mono.class)))
+                .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));
 
         webTestClient.post()
                 .uri(ApiPaths.ORDER)

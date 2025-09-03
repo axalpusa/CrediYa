@@ -13,6 +13,7 @@ import co.com.pragma.api.routerrest.OrderRouterRest;
 import co.com.pragma.api.services.AuthServiceClient;
 import co.com.pragma.model.dto.OrderPendingDTO;
 import co.com.pragma.model.order.Order;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.order.OrderUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Validator;
@@ -46,7 +47,7 @@ class OrderRouterRestTest {
     private OrderUseCase orderUseCase;
     private Validator validator;
     private OrderMapperDTO orderMapper;
-
+    private TransactionalAdapter transactionalAdapter;
     private ObjectMapper objectMapper;
     private AuthServiceClient authServiceClient;
 
@@ -82,6 +83,7 @@ class OrderRouterRestTest {
         orderMapper = mock ( OrderMapperDTO.class );
         objectMapper = mock ( ObjectMapper.class );
         authServiceClient = mock ( AuthServiceClient.class );
+        transactionalAdapter = mock ( TransactionalAdapter.class );
         UUID rolClient = RolEnum.CLIENT.getId ( );
         AuthResponseDTO response = AuthResponseDTO.builder ( )
                 .idUser ( UUID.randomUUID ( ) )
@@ -92,7 +94,7 @@ class OrderRouterRestTest {
         lenient ( ).when ( authServiceClient.validateToken ( anyString ( ) ) )
                 .thenReturn ( Mono.just ( response ) );
 
-        OrderHandler handler = new OrderHandler ( orderUseCase, objectMapper, orderMapper, authServiceClient );
+        OrderHandler handler = new OrderHandler ( orderUseCase, objectMapper, orderMapper, authServiceClient, transactionalAdapter );
         RouterFunction < ServerResponse > router = new OrderRouterRest ( ).orderRoutes ( handler );
         webTestClient = WebTestClient.bindToRouterFunction ( router ).build ( );
     }
@@ -107,6 +109,8 @@ class OrderRouterRestTest {
 
         when ( orderMapper.toModel ( any ( OrderRequestDTO.class ) ) ).thenReturn ( toSave );
         when ( orderUseCase.saveOrder ( any ( Order.class ) ) ).thenReturn ( Mono.just ( saved ) );
+        when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
 
         webTestClient.post ( )
                 .uri ( ApiPaths.ORDER )
@@ -121,7 +125,7 @@ class OrderRouterRestTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/order/report - éxito")
+    @DisplayName("POST- /api/v1/order/report - éxito")
     void reportCorrect() {
         ReportRequestDTO req = ReportRequestDTO.builder ( )
                 .status ( UUID.randomUUID ( ) )
@@ -133,7 +137,11 @@ class OrderRouterRestTest {
         AuthResponseDTO mockAuthUser = AuthResponseDTO.builder ( )
                 .idRol ( RolEnum.ASSESSOR.getId ( ) )
                 .build ( );
-        when ( authServiceClient.validateToken ( anyString ( ) ) ).thenReturn ( Mono.just ( mockAuthUser ) );
+        lenient ( ).when ( authServiceClient.validateToken ( anyString ( ) ) ).thenReturn ( Mono.just ( mockAuthUser ) );
+        lenient ( ).when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
+        lenient ( ).when ( transactionalAdapter.executeInTransaction ( any ( Flux.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Flux < ? > >getArgument ( 0 ) );
 
         OrderPendingDTO order1 = OrderPendingDTO.builder ( )
                 .amount ( BigDecimal.valueOf ( 1000 ) )

@@ -13,6 +13,7 @@ import co.com.pragma.api.mapper.OrderMapperDTO;
 import co.com.pragma.api.services.AuthServiceClient;
 import co.com.pragma.model.dto.OrderPendingDTO;
 import co.com.pragma.model.order.Order;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.order.OrderUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.ValidationException;
@@ -38,26 +39,29 @@ public class OrderHandler {
     private final ObjectMapper objectMapper;
     private final OrderMapperDTO orderMapper;
     private final AuthServiceClient authServiceClient;
+    private final TransactionalAdapter transactionalAdapter;
 
     public Mono < ServerResponse > listenSaveOrder(ServerRequest request) {
-        return validateUserToken ( request, RolEnum.CLIENT.getId ( ) )
-                .flatMap ( authUser ->
-                        request.bodyToMono ( OrderRequestDTO.class )
-                                .switchIfEmpty ( Mono.error ( new ValidationException (
-                                        List.of ( "Request body cannot be empty" )
-                                ) ) )
-                                .flatMap ( dto -> {
-                                    Order order = orderMapper.toModel ( dto );
-                                    order.setIdStatus ( StatusEnum.REVISION.getId ( ) );
-                                    return orderUseCase.saveOrder ( order );
-                                } )
-                                .flatMap ( savedOrder ->
-                                        ServerResponse.created ( URI.create ( ApiPaths.ORDER + savedOrder.getIdOrder ( ) ) )
-                                                .contentType ( MediaType.APPLICATION_JSON )
-                                                .bodyValue ( savedOrder )
-                                )
-                )
-                .onErrorResume ( this::handleError );
+        return transactionalAdapter.executeInTransaction (
+                validateUserToken ( request, RolEnum.CLIENT.getId ( ) )
+                        .flatMap ( authUser ->
+                                request.bodyToMono ( OrderRequestDTO.class )
+                                        .switchIfEmpty ( Mono.error ( new ValidationException (
+                                                List.of ( "Request body cannot be empty" )
+                                        ) ) )
+                                        .flatMap ( dto -> {
+                                            Order order = orderMapper.toModel ( dto );
+                                            order.setIdStatus ( StatusEnum.REVISION.getId ( ) );
+                                            return orderUseCase.saveOrder ( order );
+                                        } )
+                                        .flatMap ( savedOrder ->
+                                                ServerResponse.created ( URI.create ( ApiPaths.ORDER + savedOrder.getIdOrder ( ) ) )
+                                                        .contentType ( MediaType.APPLICATION_JSON )
+                                                        .bodyValue ( savedOrder )
+                                        )
+                        )
+                        .onErrorResume ( this::handleError )
+        );
     }
 
     public Mono < ServerResponse > listenReportOrder(ServerRequest request) {

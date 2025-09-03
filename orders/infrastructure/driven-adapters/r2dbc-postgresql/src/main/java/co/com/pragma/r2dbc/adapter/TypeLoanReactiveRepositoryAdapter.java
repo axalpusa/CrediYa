@@ -22,7 +22,6 @@ public class TypeLoanReactiveRepositoryAdapter extends ReactiveAdapterOperations
     }
 
     @Override
-    @Transactional
     public Mono < TypeLoan > save(TypeLoan typeLoan) {
         TypeLoanEntity entity = mapper.map ( typeLoan, TypeLoanEntity.class );
         return repository.save ( entity )

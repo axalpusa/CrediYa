@@ -2,6 +2,8 @@ package co.com.pragma.usecase.authentication;
 
 import co.com.pragma.model.auth.Auth;
 import co.com.pragma.usecase.user.UserUseCase;
+import exceptions.NotFoundException;
+import exceptions.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -17,10 +19,10 @@ public class AuthUseCase {
                             BiFunction<UUID, UUID, String> tokenGenerator,
                             BiFunction<String, String, Boolean> passwordMatches) {
         return userUseCase.findByEmailAddress(email)
-                .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
+                .switchIfEmpty(Mono.error(new NotFoundException("User not found")))
                 .flatMap(user -> {
                     if (!passwordMatches.apply(password, user.getPassword())) {
-                        return Mono.error(new RuntimeException("Invalid credentials"));
+                        return Mono.error(new UnauthorizedException("Invalid credentials"));
                     }
                     String token = tokenGenerator.apply(user.getIdUser(), user.getIdRol());
                     return Mono.just(new Auth(user.getIdUser(), user.getIdRol(), user.getFirstName(), token));

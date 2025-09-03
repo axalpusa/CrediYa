@@ -7,7 +7,6 @@ import co.com.pragma.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.pragma.r2dbc.interfaces.UserReactiveRepository;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -22,7 +21,6 @@ public class UserReactiveRepositoryAdapter extends ReactiveAdapterOperations <
     }
 
     @Override
-    @Transactional
     public Mono < User > save(User user) {
         UserEntity entity = mapper.map ( user, UserEntity.class );
         return repository.save ( entity )

@@ -22,7 +22,6 @@ public class StatusReactiveRepositoryAdapter extends ReactiveAdapterOperations <
     }
 
     @Override
-    @Transactional
     public Mono < Status > save(Status status) {
         StatusEntity entity = mapper.map ( status, StatusEntity.class );
         return repository.save ( entity )

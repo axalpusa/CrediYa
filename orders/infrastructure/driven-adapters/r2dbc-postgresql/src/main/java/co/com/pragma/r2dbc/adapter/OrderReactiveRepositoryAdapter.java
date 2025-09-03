@@ -34,7 +34,6 @@ public class OrderReactiveRepositoryAdapter extends ReactiveAdapterOperations <
 
 
     @Override
-    @Transactional
     public Mono < Order > save(Order order) {
         OrderEntity entity = mapper.map ( order, OrderEntity.class );
         return repository.save ( entity )

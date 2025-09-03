@@ -7,6 +7,7 @@ import co.com.pragma.api.handler.UserHandler;
 import co.com.pragma.api.jwt.JwtService;
 import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.api.routerrest.UserRouterRest;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,7 +27,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {UserRouterRest.class, UserHandler.class})
 @WebFluxTest
@@ -41,6 +45,9 @@ class ConfigTest {
 
     @Autowired
     private WebTestClient webTestClient;
+
+    @Autowired
+    private TransactionalAdapter transactionalAdapter;
 
     @TestConfiguration
     static class MockBeans {
@@ -64,6 +71,10 @@ class ConfigTest {
             return mock ( PasswordEncoder.class );
         }
 
+        @Bean
+        TransactionalAdapter transactionalAdapter() {
+            return mock(TransactionalAdapter.class);
+        }
     }
 
     private UserRequestDTO buildUserRequest(UUID idRol) {
@@ -105,7 +116,8 @@ class ConfigTest {
     @Test
     void userSecurityHeadersShouldBePresent() {
         UUID idRolUser = RolEnum.ADMIN.getId();
-
+        when(transactionalAdapter.executeInTransaction(any( Mono.class)))
+                .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));
         expectSecurityHeaders(
                 webTestClient.post()
                         .uri(ApiPaths.USERS)

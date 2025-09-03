@@ -5,6 +5,7 @@ import co.com.pragma.api.dto.request.RolRequestDTO;
 import co.com.pragma.api.dto.response.RolResponseDTO;
 import co.com.pragma.api.mapper.RolMapperDTO;
 import co.com.pragma.model.rol.Rol;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.rol.RolUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.ValidationException;
@@ -28,29 +29,31 @@ public class RolHandler {
     private final RolUseCase rolUseCase;
     private final ObjectMapper objectMapper;
     private final RolMapperDTO rolMapper;
+    private final TransactionalAdapter transactionalAdapter;
 
     public Mono < ServerResponse > listenSaveRol(ServerRequest request) {
-        return request.bodyToMono ( RolRequestDTO.class )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Request body cannot be empty" )
-                ) ) )
-                .flatMap ( dto -> Mono.justOrEmpty ( rolMapper.toModel ( dto ) ) )
-                .flatMap ( rolUseCase::saveRol )
-                .flatMap ( savedRol -> ServerResponse
-                        .created ( URI.create ( ApiPaths.ROL + savedRol.getIdRol ( ) ) )
-                        .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( savedRol ) )
-                .onErrorResume ( ValidationException.class, ex ->
-                        ServerResponse.badRequest ( )
-                                .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                ).onErrorResume ( e ->
-                        ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
+        return transactionalAdapter.executeInTransaction (
+                request.bodyToMono ( RolRequestDTO.class )
+                        .switchIfEmpty ( Mono.error ( new ValidationException (
+                                List.of ( "Request body cannot be empty" )
+                        ) ) )
+                        .flatMap ( dto -> Mono.justOrEmpty ( rolMapper.toModel ( dto ) ) )
+                        .flatMap ( rolUseCase::saveRol )
+                        .flatMap ( savedRol -> ServerResponse
+                                .created ( URI.create ( ApiPaths.ROL + savedRol.getIdRol ( ) ) )
                                 .contentType ( MediaType.APPLICATION_JSON )
-                                .bodyValue ( Map.of (
-                                        "message", "Unexpected error occurred",
-                                        "details", e.getMessage ( )
-                                ) )
-                );
+                                .bodyValue ( savedRol ) )
+                        .onErrorResume ( ValidationException.class, ex ->
+                                ServerResponse.badRequest ( )
+                                        .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
+                        ).onErrorResume ( e ->
+                                ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
+                                        .contentType ( MediaType.APPLICATION_JSON )
+                                        .bodyValue ( Map.of (
+                                                "message", "Unexpected error occurred",
+                                                "details", e.getMessage ( )
+                                        ) ) )
+        );
     }
 
     public Mono < ServerResponse > listenUpdateRol(ServerRequest request) {

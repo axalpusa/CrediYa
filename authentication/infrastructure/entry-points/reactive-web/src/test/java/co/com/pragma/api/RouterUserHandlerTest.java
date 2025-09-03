@@ -7,6 +7,7 @@ import co.com.pragma.api.handler.UserHandler;
 import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.api.routerrest.UserRouterRest;
 import co.com.pragma.model.user.User;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.ValidationException;
@@ -41,124 +42,132 @@ class RouterUserHandlerTest {
     private ObjectMapper objectMapper;
 
     private PasswordEncoder passwordEncoder;
+    private TransactionalAdapter transactionalAdapter;
 
     @BeforeEach
     void setup() {
-        userUseCase = mock(UserUseCase.class);
-        userMapper = mock(UserMapperDTO.class);
-        objectMapper = mock(ObjectMapper.class);
-        passwordEncoder = mock(PasswordEncoder.class);
-        UserHandler userHandler = new UserHandler(userUseCase, objectMapper, userMapper,passwordEncoder);
-        UserRouterRest userRouterRest = new UserRouterRest();
+        userUseCase = mock ( UserUseCase.class );
+        userMapper = mock ( UserMapperDTO.class );
+        objectMapper = mock ( ObjectMapper.class );
+        passwordEncoder = mock ( PasswordEncoder.class );
+        transactionalAdapter = mock ( TransactionalAdapter.class );
+        UserHandler userHandler = new UserHandler ( userUseCase, objectMapper, userMapper, passwordEncoder, transactionalAdapter );
+        UserRouterRest userRouterRest = new UserRouterRest ( );
 
-        webTestClient = WebTestClient.bindToRouterFunction(
-                userRouterRest.userRouterFunction(userHandler)
-        ).build();
+        webTestClient = WebTestClient.bindToRouterFunction (
+                userRouterRest.userRouterFunction ( userHandler )
+        ).build ( );
     }
 
     private UserRequestDTO buildRequest() {
-        UUID idRolUser = UUID.fromString("a71e243b-e901-4e6e-b521-85ff39ac2f3e");
+        UUID idRolUser = UUID.fromString ( "a71e243b-e901-4e6e-b521-85ff39ac2f3e" );
 
-        UserRequestDTO req = new UserRequestDTO();
-        req.setFirstName("axel");
-        req.setLastName("Puertas");
-        req.setAddress("Av santa rosa");
-        req.setEmailAddress("axalpusa11125@gmail.com");
-        req.setBirthDate(LocalDate.parse("01-05-1994", DateTimeFormatter.ofPattern("dd-MM-yyyy")));
-        req.setDocumentId("48594859");
-        req.setPhoneNumber("973157252");
-        req.setBaseSalary(new BigDecimal("700000"));
-        req.setIdRol(idRolUser);
+        UserRequestDTO req = new UserRequestDTO ( );
+        req.setFirstName ( "axel" );
+        req.setLastName ( "Puertas" );
+        req.setAddress ( "Av santa rosa" );
+        req.setEmailAddress ( "axalpusa11125@gmail.com" );
+        req.setBirthDate ( LocalDate.parse ( "01-05-1994", DateTimeFormatter.ofPattern ( "dd-MM-yyyy" ) ) );
+        req.setDocumentId ( "48594859" );
+        req.setPhoneNumber ( "973157252" );
+        req.setBaseSalary ( new BigDecimal ( "700000" ) );
+        req.setIdRol ( idRolUser );
         return req;
     }
 
     private User buildModelFromReq(UserRequestDTO req) {
-        UUID idRolUser = UUID.fromString("a71e243b-e901-4e6e-b521-85ff39ac2f3e");
-        UUID idNewUser = UUID.randomUUID();
-        return User.builder()
-                .idUser(idNewUser)
-                .firstName(req.getFirstName())
-                .lastName(req.getLastName())
-                .address(req.getAddress())
-                .emailAddress(req.getEmailAddress())
-                .birthDate(req.getBirthDate())
-                .documentId(req.getDocumentId())
-                .phoneNumber(req.getPhoneNumber())
-                .baseSalary(req.getBaseSalary())
-                .idRol(idRolUser)
-                .build();
+        UUID idRolUser = UUID.fromString ( "a71e243b-e901-4e6e-b521-85ff39ac2f3e" );
+        UUID idNewUser = UUID.randomUUID ( );
+        return User.builder ( )
+                .idUser ( idNewUser )
+                .firstName ( req.getFirstName ( ) )
+                .lastName ( req.getLastName ( ) )
+                .address ( req.getAddress ( ) )
+                .emailAddress ( req.getEmailAddress ( ) )
+                .birthDate ( req.getBirthDate ( ) )
+                .documentId ( req.getDocumentId ( ) )
+                .phoneNumber ( req.getPhoneNumber ( ) )
+                .baseSalary ( req.getBaseSalary ( ) )
+                .idRol ( idRolUser )
+                .build ( );
     }
 
 
     @Test
     @DisplayName("POST /api/v1/users - successful")
     void saveUserCorrect() {
-        UserRequestDTO req = buildRequest();
-        User toSave = buildModelFromReq(req);
-        User saved = toSave.toBuilder().build();
-        UserResponseDTO response = new UserResponseDTO();
-        response.setIdUser(saved.getIdUser());
-        response.setFirstName(saved.getFirstName());
-        response.setLastName(saved.getLastName());
-        response.setAddress(saved.getAddress());
-        response.setEmailAddress(saved.getEmailAddress());
-        response.setBirthDate(saved.getBirthDate());
-        response.setDocumentId(saved.getDocumentId());
-        response.setPhoneNumber(saved.getPhoneNumber());
-        response.setBaseSalary(saved.getBaseSalary());
+        UserRequestDTO req = buildRequest ( );
+        User toSave = buildModelFromReq ( req );
+        User saved = toSave.toBuilder ( ).build ( );
+        UserResponseDTO response = new UserResponseDTO ( );
+        response.setIdUser ( saved.getIdUser ( ) );
+        response.setFirstName ( saved.getFirstName ( ) );
+        response.setLastName ( saved.getLastName ( ) );
+        response.setAddress ( saved.getAddress ( ) );
+        response.setEmailAddress ( saved.getEmailAddress ( ) );
+        response.setBirthDate ( saved.getBirthDate ( ) );
+        response.setDocumentId ( saved.getDocumentId ( ) );
+        response.setPhoneNumber ( saved.getPhoneNumber ( ) );
+        response.setBaseSalary ( saved.getBaseSalary ( ) );
 
-        lenient().when(userMapper.toModel(any(UserRequestDTO.class))).thenReturn(toSave);
-        lenient().when(userUseCase.saveUser(any(User.class))).thenReturn(Mono.just(saved));
-        lenient().when(userMapper.toResponse(any(User.class))).thenReturn(response);
+        lenient ( ).when ( userMapper.toModel ( any ( UserRequestDTO.class ) ) ).thenReturn ( toSave );
+        lenient ( ).when ( userUseCase.saveUser ( any ( User.class ) ) ).thenReturn ( Mono.just ( saved ) );
+        lenient ( ).when ( userMapper.toResponse ( any ( User.class ) ) ).thenReturn ( response );
+        lenient ( ).when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
 
-        webTestClient.post()
-                .uri( ApiPaths.USERS )
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody()
-                .jsonPath("$.emailAddress").isEqualTo(req.getEmailAddress());
+
+        webTestClient.post ( )
+                .uri ( ApiPaths.USERS )
+                .contentType ( MediaType.APPLICATION_JSON )
+                .bodyValue ( req )
+                .exchange ( )
+                .expectStatus ( ).isCreated ( )
+                .expectBody ( )
+                .jsonPath ( "$.emailAddress" ).isEqualTo ( req.getEmailAddress ( ) );
 
     }
 
     @Test
     @DisplayName("POST /api/v1/users - validation_error")
     void saveUserValidationError() {
-        UserRequestDTO req = buildRequest();
-        req.setFirstName("");
-        User invalidUser = buildModelFromReq(req);
-        when(userMapper.toModel(any(UserRequestDTO.class))).thenReturn(invalidUser);
-        when(userUseCase.saveUser(any(User.class)))
-                .thenReturn(Mono.error(new ValidationException(List.of("First name is required."))));
-        webTestClient.post()
-                .uri(ApiPaths.USERS)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody()
-                .jsonPath("$.errors[0]").isEqualTo("First name is required.");
+        UserRequestDTO req = buildRequest ( );
+        req.setFirstName ( "" );
+        User invalidUser = buildModelFromReq ( req );
+        when ( userMapper.toModel ( any ( UserRequestDTO.class ) ) ).thenReturn ( invalidUser );
+        when ( userUseCase.saveUser ( any ( User.class ) ) )
+                .thenReturn ( Mono.error ( new ValidationException ( List.of ( "First name is required." ) ) ) );
+        when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
+        webTestClient.post ( )
+                .uri ( ApiPaths.USERS )
+                .contentType ( MediaType.APPLICATION_JSON )
+                .bodyValue ( req )
+                .exchange ( )
+                .expectStatus ( ).isBadRequest ( )
+                .expectBody ( )
+                .jsonPath ( "$.errors[0]" ).isEqualTo ( "First name is required." );
     }
 
     @Test
     @DisplayName("POST /api/v1/users - email address duplicate")
     void saveUserExistEmailAddress() {
-        UserRequestDTO req = buildRequest();
-        User toSave = buildModelFromReq(req);
+        UserRequestDTO req = buildRequest ( );
+        User toSave = buildModelFromReq ( req );
 
-        when(userMapper.toModel(any(UserRequestDTO.class))).thenReturn(toSave);
-        when(userUseCase.saveUser(any(User.class)))
-                .thenReturn(Mono.error(new ValidationException(List.of("Email address duplicate."))));
-
-        webTestClient.post()
-                .uri(ApiPaths.USERS)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody()
-                .jsonPath("$.errors[0]").isEqualTo("Email address duplicate.");
+        when ( userMapper.toModel ( any ( UserRequestDTO.class ) ) ).thenReturn ( toSave );
+        when ( userUseCase.saveUser ( any ( User.class ) ) )
+                .thenReturn ( Mono.error ( new ValidationException ( List.of ( "Email address duplicate." ) ) ) );
+        when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
+        webTestClient.post ( )
+                .uri ( ApiPaths.USERS )
+                .contentType ( MediaType.APPLICATION_JSON )
+                .bodyValue ( req )
+                .exchange ( )
+                .expectStatus ( ).isBadRequest ( )
+                .expectBody ( )
+                .jsonPath ( "$.errors[0]" ).isEqualTo ( "Email address duplicate." );
     }
 
 }

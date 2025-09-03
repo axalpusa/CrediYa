@@ -22,7 +22,6 @@ public class RolReactiveRepositoryAdapter extends ReactiveAdapterOperations <
     }
 
     @Override
-    @Transactional
     public Mono < Rol > save(Rol rol) {
         RolEntity entity = mapper.map ( rol, RolEntity.class );
         return repository.save ( entity )

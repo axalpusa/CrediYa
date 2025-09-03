@@ -8,7 +8,9 @@ import co.com.pragma.api.handler.AuthHandler;
 import co.com.pragma.api.jwt.JwtService;
 import co.com.pragma.api.routerrest.AuthRouterRest;
 import co.com.pragma.model.auth.Auth;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.authentication.AuthUseCase;
+import exceptions.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,7 @@ import java.util.function.BiFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,16 +40,16 @@ class RouterAuthHandlerTest {
     private AuthUseCase authUseCase;
     private JwtService jwtService;
     private PasswordEncoder passwordEncoder;
+    private TransactionalAdapter transactionalAdapter;
 
     @BeforeEach
     void setup() {
         authUseCase = mock ( AuthUseCase.class );
         jwtService = mock ( JwtService.class );
         passwordEncoder = mock ( PasswordEncoder.class );
-        //  authMapper = mock(AuthMapperDTO.class);
+        transactionalAdapter = mock ( TransactionalAdapter.class );
 
-        AuthHandler authHandler = new AuthHandler ( authUseCase, jwtService, passwordEncoder );
-        //ReflectionTestUtils.setField(authHandler, "authMapper", authMapper);
+        AuthHandler authHandler = new AuthHandler ( authUseCase, jwtService, passwordEncoder, transactionalAdapter );
         AuthRouterRest authRouterRest = new AuthRouterRest ( );
 
         webTestClient = WebTestClient.bindToRouterFunction (
@@ -86,14 +89,14 @@ class RouterAuthHandlerTest {
         response.setName ( saved.getName ( ) );
         response.setToken ( saved.getToken ( ) );
 
-        // when(authMapper.toModel(any(AuthRequestDTO.class))).thenReturn(toSave);
         when ( authUseCase.login (
                 eq ( req.getEmail ( ) ),
                 eq ( req.getPassword ( ) ),
                 any ( BiFunction.class ),
                 any ( BiFunction.class )
         ) ).thenReturn ( Mono.just ( saved ) );
-        // when(authMapper.toResponse(any(Auth.class))).thenReturn(response);
+        when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
 
         webTestClient.post ( )
                 .uri ( ApiPaths.LOGIN )
@@ -118,8 +121,10 @@ class RouterAuthHandlerTest {
                 eq ( "axalpusa" ),
                 any ( ),
                 any ( )
-        ) ).thenReturn ( Mono.error ( new RuntimeException ( "Invalid credentials" ) ) );
+        ) ).thenReturn ( Mono.error ( new UnauthorizedException ( "Invalid credentials" ) ) );
 
+        when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
         webTestClient.post ( )
                 .uri ( ApiPaths.LOGIN )
                 .contentType ( MediaType.APPLICATION_JSON )
@@ -127,11 +132,7 @@ class RouterAuthHandlerTest {
                 .exchange ( )
                 .expectStatus ( ).isUnauthorized ( )
                 .expectHeader ( ).contentType ( MediaType.APPLICATION_JSON )
-                .expectBody ( Map.class )
-                .value ( body -> {
-                    assert body.get ( "error" ).equals ( "Invalid credentials" );
-                } );
+                .expectBody ( )
+                .jsonPath ( "$.error" ).isEqualTo ( "Invalid credentials" );
     }
-
-
 }

@@ -6,6 +6,7 @@ import co.com.pragma.api.dto.response.UserReportResponseDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.model.user.User;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.ValidationException;
@@ -35,36 +36,38 @@ public class UserHandler {
     private final ObjectMapper objectMapper;
     private final UserMapperDTO userMapperDTO;
     private final PasswordEncoder passwordEncoder;
+    private final TransactionalAdapter transactionalAdapter;
 
     public Mono < ServerResponse > listenSaveUser(ServerRequest request) {
-        return request.bodyToMono ( UserRequestDTO.class )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Request body cannot be empty" )
-                ) ) )
-                // .map(userMapperDTO::toModel)
-                .flatMap ( dto -> Mono.justOrEmpty ( userMapperDTO.toModel ( dto ) ) )
-                .map ( user -> {
-                    user.setPassword ( passwordEncoder.encode ( user.getPassword ( ) ) );
-                    return user;
-                } )
-                .flatMap ( userUseCase::saveUser )
-                .flatMap ( user -> ServerResponse
-                        .created ( URI.create ( ApiPaths.USERS + user.getIdUser ( ) ) )
-                        .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( user ) )
-                .onErrorResume ( ValidationException.class, ex ->
-                        ServerResponse.badRequest ( )
+        return transactionalAdapter.executeInTransaction (
+                request.bodyToMono ( UserRequestDTO.class )
+                        .switchIfEmpty ( Mono.error ( new ValidationException (
+                                List.of ( "Request body cannot be empty" )
+                        ) ) )
+                        // .map(userMapperDTO::toModel)
+                        .flatMap ( dto -> Mono.justOrEmpty ( userMapperDTO.toModel ( dto ) ) )
+                        .map ( user -> {
+                            user.setPassword ( passwordEncoder.encode ( user.getPassword ( ) ) );
+                            return user;
+                        } )
+                        .flatMap ( userUseCase::saveUser )
+                        .flatMap ( user -> ServerResponse
+                                .created ( URI.create ( ApiPaths.USERS + user.getIdUser ( ) ) )
                                 .contentType ( MediaType.APPLICATION_JSON )
-                                .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                )
-                .onErrorResume ( e ->
-                        ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                                .contentType ( MediaType.APPLICATION_JSON )
-                                .bodyValue ( Map.of (
-                                        "message", "Unexpected error occurred",
-                                        "details", e.getMessage ( )
-                                ) )
-                );
+                                .bodyValue ( user ) )
+                        .onErrorResume ( ValidationException.class, ex ->
+                                ServerResponse.badRequest ( )
+                                        .contentType ( MediaType.APPLICATION_JSON )
+                                        .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
+                        )
+                        .onErrorResume ( e ->
+                                ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
+                                        .contentType ( MediaType.APPLICATION_JSON )
+                                        .bodyValue ( Map.of (
+                                                "message", "Unexpected error occurred",
+                                                "details", e.getMessage ( )
+                                        ) ) )
+        );
     }
 
 

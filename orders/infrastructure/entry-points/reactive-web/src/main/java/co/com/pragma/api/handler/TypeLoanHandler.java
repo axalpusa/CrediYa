@@ -5,6 +5,7 @@ import co.com.pragma.api.dto.request.TypeLoanRequestDTO;
 import co.com.pragma.api.dto.response.TypeLoanResponseDTO;
 import co.com.pragma.api.mapper.TypeLoanMapperDTO;
 import co.com.pragma.model.typeloan.TypeLoan;
+import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.typeloan.TypeLoanUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.ValidationException;
@@ -28,30 +29,33 @@ public class TypeLoanHandler {
     private final TypeLoanUseCase typeloanUseCase;
     private final ObjectMapper objectMapper;
     private final TypeLoanMapperDTO typeLoanMapper;
+    private final TransactionalAdapter transactionalAdapter;
 
     public Mono < ServerResponse > listenSaveTypeLoan(ServerRequest request) {
-        return request.bodyToMono ( TypeLoanRequestDTO.class )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Request body cannot be empty" )
-                ) ) )
-                .flatMap ( dto -> Mono.justOrEmpty ( typeLoanMapper.toModel ( dto ) ) )
-                .flatMap ( typeloanUseCase::saveTypeLoan )
-                .flatMap ( savedTypeLoan -> ServerResponse
-                        .created ( URI.create ( ApiPaths.TYPELOAN + savedTypeLoan.getIdTypeLoan ( ) ) )
-                        .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( savedTypeLoan ) )
-                .onErrorResume ( ValidationException.class, ex ->
-                        ServerResponse.badRequest ( )
+        return transactionalAdapter.executeInTransaction (
+                request.bodyToMono ( TypeLoanRequestDTO.class )
+                        .switchIfEmpty ( Mono.error ( new ValidationException (
+                                List.of ( "Request body cannot be empty" )
+                        ) ) )
+                        .flatMap ( dto -> Mono.justOrEmpty ( typeLoanMapper.toModel ( dto ) ) )
+                        .flatMap ( typeloanUseCase::saveTypeLoan )
+                        .flatMap ( savedTypeLoan -> ServerResponse
+                                .created ( URI.create ( ApiPaths.TYPELOAN + savedTypeLoan.getIdTypeLoan ( ) ) )
                                 .contentType ( MediaType.APPLICATION_JSON )
-                                .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                ).onErrorResume ( e ->
-                        ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                                .contentType ( MediaType.APPLICATION_JSON )
-                                .bodyValue ( Map.of (
-                                        "message", "Unexpected error occurred",
-                                        "details", e.getMessage ( )
-                                ) )
-                );
+                                .bodyValue ( savedTypeLoan ) )
+                        .onErrorResume ( ValidationException.class, ex ->
+                                ServerResponse.badRequest ( )
+                                        .contentType ( MediaType.APPLICATION_JSON )
+                                        .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
+                        ).onErrorResume ( e ->
+                                ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
+                                        .contentType ( MediaType.APPLICATION_JSON )
+                                        .bodyValue ( Map.of (
+                                                "message", "Unexpected error occurred",
+                                                "details", e.getMessage ( )
+                                        ) )
+                        )
+        );
     }
 
     public Mono < ServerResponse > listenUpdateTypeLoan(ServerRequest request) {
