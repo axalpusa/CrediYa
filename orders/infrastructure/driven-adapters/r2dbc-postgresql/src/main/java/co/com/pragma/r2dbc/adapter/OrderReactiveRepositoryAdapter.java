@@ -60,11 +60,19 @@ public class OrderReactiveRepositoryAdapter extends ReactiveAdapterOperations <
 
     @Override
     public Flux < OrderPendingDTO > findPendingOrders(String filterEmail, int page, int size) {
+
         String sql = """
                         
                         SELECT o.amount, o.term_months, o.email_address,
                        t.name AS loan_type, t.interest_rate,
-                       s.name AS order_status
+                       s.name AS order_status,
+                       COALESCE(SUM(
+                               CASE
+                                   WHEN s.id_status = '1603cbb9-f4ad-4112-9804-c3d4c04a48f5' THEN
+                                       (o.amount * t.interest_rate) / (1 - POWER(1 + t.interest_rate, -o.term_months))
+                                   ELSE 0
+                               END
+                           ) OVER (PARTITION BY o.email_address), 0) AS deuda_total_mensual_solicitudes_aprobadas
                 FROM orders o
                          JOIN type_loan t ON o.id_type_loan = t.id_type_loan
                          JOIN status s ON o.id_status = s.id_status

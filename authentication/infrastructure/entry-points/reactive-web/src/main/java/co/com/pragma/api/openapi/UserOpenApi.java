@@ -85,7 +85,33 @@ public class UserOpenApi {
                                     @ApiResponse(responseCode = "404", description = "User not found")
                             }
                     )
+            ),
+            @RouterOperation(
+                    path = ApiPaths.USERSBYEMAIL,
+                    produces = {MediaType.APPLICATION_JSON_VALUE},
+                    method = RequestMethod.GET,
+                    beanClass = UserHandler.class,
+                    beanMethod = "listenGetUserByEmail",
+                    operation = @Operation(
+                            operationId = "findByEmailAddress",
+                            summary = "Get user by email",
+                            tags = {"Users"},
+                            parameters = {
+                                    @Parameter(
+                                            name = "email",
+                                            description = "Email address",
+                                            required = true,
+                                            in = ParameterIn.PATH,
+                                            schema = @Schema(type = "string")
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "User found"),
+                                    @ApiResponse(responseCode = "404", description = "User not found")
+                            }
+                    )
             )
+
     })
     public RouterFunction < ServerResponse > userRoutesDoc() {
         return RouterFunctions.route (

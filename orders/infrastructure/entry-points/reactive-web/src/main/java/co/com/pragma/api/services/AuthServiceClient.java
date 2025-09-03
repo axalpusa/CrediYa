@@ -2,7 +2,7 @@ package co.com.pragma.api.services;
 
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
-import org.springframework.http.HttpStatus;
+import co.com.pragma.api.dto.response.UserReportResponseDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -24,12 +24,14 @@ public class AuthServiceClient {
                 .bodyToMono(AuthResponseDTO.class);
     }
 
-    public Mono<AuthResponseDTO> validateToken(String token) {
+    public Mono< UserReportResponseDTO > getUserByEmailAddress(String token,String email) {
         return webClient.get()
-                .uri(ApiPaths.VALIDATE)
+                .uri(uriBuilder -> uriBuilder
+                        .path ( ApiPaths.USERSBYEMAIL )
+                        .build ( email))
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
-                .bodyToMono(AuthResponseDTO.class);
+                .bodyToMono(UserReportResponseDTO.class);
     }
 
 
