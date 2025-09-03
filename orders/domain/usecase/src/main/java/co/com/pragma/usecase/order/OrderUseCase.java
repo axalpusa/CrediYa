@@ -1,5 +1,6 @@
 package co.com.pragma.usecase.order;
 
+import co.com.pragma.model.dto.OrderPendingDTO;
 import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
@@ -44,7 +45,6 @@ public class OrderUseCase {
         return errors.isEmpty ( ) ? Mono.empty ( ) : Mono.error ( new ValidationException ( errors ) );
     }
 
-
     public Mono < Order > updateOrder(Order order) {
         return orderRepository.save ( order );
     }
@@ -62,6 +62,10 @@ public class OrderUseCase {
 
     public Flux < Order > getAllOrders() {
         return orderRepository.findAll ( );
+    }
+
+    public Flux < OrderPendingDTO > findPendingOrders(UUID filterStatus,String filterEmail, int page, int size) {
+        return orderRepository.findPendingOrders (filterStatus, filterEmail, page, size );
     }
 
     private boolean isBlank(String value) {

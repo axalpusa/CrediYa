@@ -22,6 +22,7 @@ public class OrderRouterRest {
                 .DELETE ( ApiPaths.ORDERBYID, handler::listenDeleteOrder )
                 .GET ( ApiPaths.ORDERALL, handler::listenGetAllOrders )
                 .GET ( ApiPaths.ORDERBYID, handler::listenGetOrderById )
+                .POST ( ApiPaths.REPORT, handler::listenReportOrder )
                 .build ( );
     }
 }

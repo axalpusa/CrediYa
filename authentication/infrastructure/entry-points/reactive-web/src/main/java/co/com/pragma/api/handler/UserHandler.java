@@ -2,6 +2,7 @@ package co.com.pragma.api.handler;
 
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.UserRequestDTO;
+import co.com.pragma.api.dto.response.UserReportResponseDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.model.user.User;
@@ -19,6 +20,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,12 +41,12 @@ public class UserHandler {
                 .switchIfEmpty ( Mono.error ( new ValidationException (
                         List.of ( "Request body cannot be empty" )
                 ) ) )
-               // .map(userMapperDTO::toModel)
-                 .flatMap ( dto -> Mono.justOrEmpty ( userMapperDTO.toModel ( dto ) ) )
-                /*.map ( user -> {
+                // .map(userMapperDTO::toModel)
+                .flatMap ( dto -> Mono.justOrEmpty ( userMapperDTO.toModel ( dto ) ) )
+                .map ( user -> {
                     user.setPassword ( passwordEncoder.encode ( user.getPassword ( ) ) );
                     return user;
-                } )*/
+                } )
                 .flatMap ( userUseCase::saveUser )
                 .flatMap ( user -> ServerResponse
                         .created ( URI.create ( ApiPaths.USERS + user.getIdUser ( ) ) )
@@ -104,5 +107,27 @@ public class UserHandler {
                 .switchIfEmpty ( ServerResponse.notFound ( ).build ( ) );
     }
 
+
+    public Mono < ServerResponse > listenFindByEmailAddress(ServerRequest serverRequest) {
+        return Mono.fromCallable ( () -> serverRequest.pathVariable ( "email" ) )
+                .map ( email -> {
+                    String decoded = URLDecoder.decode ( email, StandardCharsets.UTF_8 );
+                    return decoded;
+                } )
+                .map ( String::trim )
+                .filter ( email -> !email.isBlank ( ) )
+                .flatMap ( userUseCase::findByEmailAddress )
+                .map ( user -> {
+                    UserReportResponseDTO dto = new UserReportResponseDTO ( );
+                    dto.setEmailAddress ( user.getEmailAddress ( ) );
+                    dto.setFirstName ( user.getFirstName ( ) );
+                    dto.setLastName ( user.getLastName ( ) );
+                    dto.setBaseSalary ( user.getBaseSalary ( ) );
+                    return dto;
+                } ).flatMap ( dto -> ServerResponse.ok ( )
+                        .contentType ( MediaType.APPLICATION_JSON )
+                        .bodyValue ( dto ) )
+                .switchIfEmpty ( ServerResponse.notFound ( ).build ( ) );
+    }
 }
 

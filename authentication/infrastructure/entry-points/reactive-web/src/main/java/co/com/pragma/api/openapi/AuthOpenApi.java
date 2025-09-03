@@ -2,6 +2,7 @@ package co.com.pragma.api.openapi;
 
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.AuthRequestDTO;
+import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.handler.AuthHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,7 +34,7 @@ public class AuthOpenApi {
                     operation = @Operation(
                             operationId = "login",
                             summary = "Login",
-                            tags = {"login"},
+                            tags = {"Login"},
                             requestBody = @RequestBody(
                                     required = true,
                                     content = @Content(
@@ -42,8 +43,16 @@ public class AuthOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(
+                                            responseCode = "200",
+                                            description = "Login successful",
+                                            content = @Content(
+                                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                                    schema = @Schema(implementation = AuthResponseDTO.class)
+                                            )
+                                    ),
+                                    @ApiResponse(responseCode = "400", description = "Request invalid"),
+                                    @ApiResponse(responseCode = "401", description = "Invalid credentials")
                             }
                     )
             )

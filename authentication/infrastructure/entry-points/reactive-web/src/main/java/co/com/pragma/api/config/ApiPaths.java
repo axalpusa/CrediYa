@@ -10,15 +10,18 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Component
 public class ApiPaths {
-    public static final String LOGIN = "/api/v1/auth/login";
-    public static final String VALIDATE = "/api/v1/auth/validate";
+    private static final String baseURL = "/api/v1";
 
-    public static final String USERS = "/api/v1/users";
-    public static final String USERSBYID = "/api/v1/users/{idUser}";
-    public static final String USERSALL = "/api/v1/users/all";
+    public static final String LOGIN = baseURL + "/auth/login";
+    public static final String VALIDATE = baseURL + "/auth/validate";
 
-    public static final String ROL = "/api/v1/rol";
-    public static final String ROLBYID = "/api/v1/rol/{idRol}";
-    public static final String ROLLALL = "/api/v1/rol/all";
+    public static final String USERS = baseURL + "/users";
+    public static final String USERSBYID = baseURL + "/users/{idUser}";
+    public static final String USERSALL = baseURL + "/users/all";
+    public static final String USERSBYEMAIL = baseURL + "/users/byEmail/{email}";
+
+    public static final String ROL = baseURL + "/rol";
+    public static final String ROLBYID = baseURL + "/rol/{idRol}";
+    public static final String ROLLALL = baseURL + "/rol/all";
 
 }
