@@ -20,6 +20,6 @@ public class OrderResponseDTO {
     Integer termMonths;
     String documentId;
     String emailAddress;
-    UUID idStatus;
     UUID idTypeLoan;
+    UUID idStatus;
 }
