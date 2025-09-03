@@ -13,25 +13,25 @@ public class AuthServiceClient {
     private final WebClient webClient;
 
     public AuthServiceClient(WebClient.Builder builder) {
-        this.webClient = builder.baseUrl("http://localhost:8090").build();
+        this.webClient = builder.baseUrl ( "http://localhost:8090" ).build ( );
     }
 
-    public Mono<AuthResponseDTO> validateToken(String token) {
-        return webClient.get()
-                .uri(ApiPaths.VALIDATE)
-                .header("Authorization", "Bearer " + token)
-                .retrieve()
-                .bodyToMono(AuthResponseDTO.class);
+    public Mono < AuthResponseDTO > validateToken(String token) {
+        return webClient.get ( )
+                .uri ( ApiPaths.VALIDATE )
+                .header ( "Authorization", "Bearer " + token )
+                .retrieve ( )
+                .bodyToMono ( AuthResponseDTO.class );
     }
 
-    public Mono< UserReportResponseDTO > getUserByEmailAddress(String token,String email) {
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder
+    public Mono < UserReportResponseDTO > getUserByEmailAddress(String token, String email) {
+        return webClient.get ( )
+                .uri ( uriBuilder -> uriBuilder
                         .path ( ApiPaths.USERSBYEMAIL )
-                        .build ( email))
-                .header("Authorization", "Bearer " + token)
-                .retrieve()
-                .bodyToMono(UserReportResponseDTO.class);
+                        .build ( email ) )
+                .header ( "Authorization", "Bearer " + token )
+                .retrieve ( )
+                .bodyToMono ( UserReportResponseDTO.class );
     }
 
 

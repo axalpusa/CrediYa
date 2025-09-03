@@ -108,11 +108,10 @@ public class UserHandler {
     }
 
 
-    public Mono < ServerResponse > listenGetUserByEmail(ServerRequest serverRequest) {
+    public Mono < ServerResponse > listenFindByEmailAddress(ServerRequest serverRequest) {
         return Mono.fromCallable ( () -> serverRequest.pathVariable ( "email" ) )
                 .map ( email -> {
                     String decoded = URLDecoder.decode ( email, StandardCharsets.UTF_8 );
-                    System.out.println ( decoded );
                     return decoded;
                 } )
                 .map ( String::trim )

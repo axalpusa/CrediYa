@@ -22,7 +22,7 @@ public class UserRouterRest {
                 .DELETE ( ApiPaths.USERSBYID, handler::listenDeleteUser )
                 .GET ( ApiPaths.USERSALL, handler::listenGetAllUsers )
                 .GET ( ApiPaths.USERSBYID, handler::listenGetUserById )
-                .GET ( ApiPaths.USERSBYEMAIL, handler::listenGetUserByEmail )
+                .GET ( ApiPaths.USERSBYEMAIL, handler::listenFindByEmailAddress )
                 .build ( );
     }
 

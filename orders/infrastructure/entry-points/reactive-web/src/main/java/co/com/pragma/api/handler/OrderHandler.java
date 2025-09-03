@@ -23,7 +23,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
@@ -61,71 +60,12 @@ public class OrderHandler {
                 .onErrorResume ( this::handleError );
     }
 
-    /*
-        public Mono < ServerResponse > listenReportOrder(ServerRequest request) {
-            return request.bodyToMono ( ReportRequestDTO.class )
-                    .flatMap ( req -> {
-                        String filterEmail = req.getEmail ( );
-                        int page = req.getPage ( );
-                        int size = req.getSize ( );
-
-                        String authHeader = request.headers ( ).firstHeader ( "Authorization" );
-                        if ( authHeader == null || !authHeader.startsWith ( "Bearer " ) ) {
-                            return Mono.error ( new RuntimeException ( "Authorization header missing or invalid" ) );
-                        }
-                        String token = authHeader.substring ( 7 );
-                        return validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
-                                .flatMap ( authUser ->
-                                        orderUseCase.findPendingOrders ( filterEmail, page, size )
-                                                .flatMap ( orderPendingDTO ->
-                                                        authServiceClient.getUserByEmailAddress ( token, orderPendingDTO.getEmail ( ) )
-                                                                .onErrorResume ( WebClientResponseException.NotFound.class, ex -> Mono.empty ( ) )
-                                                                .map ( user -> {
-                                                                    ReportResponseDTO report = new ReportResponseDTO ( );
-                                                                    report.setStatusOrder ( orderPendingDTO.getStatusOrder ( ) );
-                                                                    report.setAmount ( orderPendingDTO.getAmount ( ) );
-                                                                    report.setEmail ( user.getEmailAddress ( ) );
-                                                                    report.setName ( user.getFirstName ( ) + " " + user.getLastName ( ) );
-                                                                    report.setBaseSalary ( user.getBaseSalary ( ) );
-                                                                    report.setTypeLoan ( orderPendingDTO.getTypeLoan ( ) );
-                                                                    report.setInterestRate ( orderPendingDTO.getInterestRate ( ) );
-                                                                    report.setTermMonths ( orderPendingDTO.getTermMonths ( ) );
-                                                                    return report;
-                                                                } )
-                                                )
-                                                .collectList ( )
-                                                .flatMap ( list -> ServerResponse.ok ( )
-                                                        .contentType ( MediaType.APPLICATION_JSON )
-                                                        .bodyValue ( list ) )
-                                );
-                    } )
-                    .onErrorResume ( ValidationException.class, ex ->
-                            ServerResponse.badRequest ( )
-                                    .contentType ( MediaType.APPLICATION_JSON )
-                                    .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                    )
-                    .onErrorResume ( WebClientResponseException.Unauthorized.class, ex ->
-                            ServerResponse.status ( HttpStatus.UNAUTHORIZED )
-                                    .contentType ( MediaType.APPLICATION_JSON )
-                                    .bodyValue ( Map.of ( "errors", "Token inválido o expirado" ) )
-                    )
-                    .onErrorResume ( WebClientResponseException.Forbidden.class, ex ->
-                            ServerResponse.status ( HttpStatus.FORBIDDEN )
-                                    .contentType ( MediaType.APPLICATION_JSON )
-                                    .bodyValue ( Map.of ( "errors", "Acceso denegado" ) )
-                    )
-                    .onErrorResume ( RuntimeException.class, ex ->
-                            ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                                    .contentType ( MediaType.APPLICATION_JSON )
-                                    .bodyValue ( Map.of ( "errors", ex.getMessage ( ) ) )
-                    );
-        }*/
     public Mono < ServerResponse > listenReportOrder(ServerRequest request) {
         return request.bodyToMono ( ReportRequestDTO.class )
                 .flatMap ( req ->
                         validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
                                 .flatMap ( authUser ->
-                                        orderUseCase.findPendingOrders ( req.getEmail ( ), req.getPage ( ), req.getSize ( ) )
+                                        orderUseCase.findPendingOrders ( req.getStatus ( ), req.getEmail ( ), req.getPage ( ), req.getSize ( ) )
                                                 .flatMap ( order ->
                                                         authServiceClient.getUserByEmailAddress ( authUser.getToken ( ), order.getEmail ( ) )
                                                                 .onErrorResume ( WebClientResponseException.NotFound.class, ex -> Mono.empty ( ) )
@@ -150,6 +90,7 @@ public class OrderHandler {
         report.setTypeLoan ( order.getTypeLoan ( ) );
         report.setInterestRate ( order.getInterestRate ( ) );
         report.setTermMonths ( order.getTermMonths ( ) );
+        report.setTotalMonthlyDebtApprovedRequests ( order.getTotalMonthlyDebtApprovedRequests ( ) );
         return report;
     }
 

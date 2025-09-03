@@ -36,6 +36,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter ( jwtService );
+    }
+
+    @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf ( ServerHttpSecurity.CsrfSpec::disable )
@@ -61,6 +66,7 @@ public class SecurityConfig {
                 "/api/doc/api-docs",
                 "/webjars/swagger-ui/**"
         ).permitAll ( );
+
     }
 
     private void configureUserEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec auth) {
@@ -81,11 +87,6 @@ public class SecurityConfig {
 
     private void configureOtherEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec auth) {
         auth.anyExchange ( ).authenticated ( );
-    }
-
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter ( jwtService );
     }
 
     private Mono < AuthorizationDecision > isAdminOrAsesor(Mono < Authentication > authenticationMono,

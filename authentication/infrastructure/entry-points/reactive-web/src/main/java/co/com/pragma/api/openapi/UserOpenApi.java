@@ -34,7 +34,30 @@ public class UserOpenApi {
                     beanMethod = "listenSaveUser",
                     operation = @Operation(
                             operationId = "saveUser",
-                            summary = "Create a user",
+                            summary = "Create a user (user admin)",
+                            tags = {"Users"},
+                            requestBody = @RequestBody(
+                                    required = true,
+                                    content = @Content(
+                                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                            schema = @Schema(implementation = UserRequestDTO.class)
+                                    )
+                            ),
+                            responses = {
+                                    @ApiResponse(responseCode = "201", description = "Successful"),
+                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                            }
+                    )
+            ),
+            @RouterOperation(
+                    path = ApiPaths.USERS,
+                    produces = {MediaType.APPLICATION_JSON_VALUE},
+                    method = RequestMethod.PUT,
+                    beanClass = UserHandler.class,
+                    beanMethod = "listenUpdateUser",
+                    operation = @Operation(
+                            operationId = "updateUser",
+                            summary = "Update a user",
                             tags = {"Users"},
                             requestBody = @RequestBody(
                                     required = true,
@@ -81,8 +104,35 @@ public class UserOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "User found"),
+                                    @ApiResponse(responseCode = "200", description = "User updated successfully"),
+                                    @ApiResponse(responseCode = "400", description = "Invalid request data"),
                                     @ApiResponse(responseCode = "404", description = "User not found")
+                            }
+                    )
+            ),
+            @RouterOperation(
+                    path = ApiPaths.USERSBYID,
+                    produces = {MediaType.APPLICATION_JSON_VALUE},
+                    method = RequestMethod.DELETE,
+                    beanClass = UserHandler.class,
+                    beanMethod = "listenDeleteUser",
+                    operation = @Operation(
+                            operationId = "deleteUser",
+                            summary = "Delete user by ID",
+                            tags = {"Users"},
+                            parameters = {
+                                    @Parameter(
+                                            name = "idUser",
+                                            description = "ID user (UUID)",
+                                            required = true,
+                                            in = ParameterIn.PATH,
+                                            schema = @Schema(type = "string", format = "uuid")
+                                    )
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "204", description = "User deleted successfully"),
+                                    @ApiResponse(responseCode = "404", description = "User not found"),
+                                    @ApiResponse(responseCode = "400", description = "Invalid ID supplied")
                             }
                     )
             ),
@@ -91,7 +141,7 @@ public class UserOpenApi {
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = UserHandler.class,
-                    beanMethod = "listenGetUserByEmail",
+                    beanMethod = "listenFindByEmailAddress",
                     operation = @Operation(
                             operationId = "findByEmailAddress",
                             summary = "Get user by email",
@@ -111,7 +161,6 @@ public class UserOpenApi {
                             }
                     )
             )
-
     })
     public RouterFunction < ServerResponse > userRoutesDoc() {
         return RouterFunctions.route (

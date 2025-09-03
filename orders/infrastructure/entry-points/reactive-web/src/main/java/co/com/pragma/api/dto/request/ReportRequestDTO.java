@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 @Setter
 @Builder
 public class ReportRequestDTO {
+    UUID status;
     String email;
     int size;
     int page;

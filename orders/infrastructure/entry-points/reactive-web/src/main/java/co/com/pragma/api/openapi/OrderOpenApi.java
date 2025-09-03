@@ -2,6 +2,7 @@ package co.com.pragma.api.openapi;
 
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
+import co.com.pragma.api.dto.request.ReportRequestDTO;
 import co.com.pragma.api.handler.OrderHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,7 +35,7 @@ public class OrderOpenApi {
                     beanMethod = "listenSaveOrder",
                     operation = @Operation(
                             operationId = "saveOrder",
-                            summary = "Create a order",
+                            summary = "Create a order (user client)",
                             tags = {"Order"},
                             requestBody = @RequestBody(
                                     required = true,
@@ -85,7 +86,30 @@ public class OrderOpenApi {
                                     @ApiResponse(responseCode = "404", description = "Order not found")
                             }
                     )
-            )
+            ),
+            @RouterOperation(
+                    path = ApiPaths.REPORT,
+                    produces = {MediaType.APPLICATION_JSON_VALUE},
+                    method = RequestMethod.POST,
+                    beanClass = OrderHandler.class,
+                    beanMethod = "listenReportOrder",
+                    operation = @Operation(
+                            operationId = "report",
+                            summary = "Report with pagination",
+                            tags = {"Order"},
+                            requestBody = @RequestBody(
+                                    required = true,
+                                    content = @Content(
+                                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                            schema = @Schema(implementation = ReportRequestDTO.class)
+                                    )
+                            ),
+                            responses = {
+                                    @ApiResponse(responseCode = "201", description = "Successful"),
+                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                            }
+                    )
+            ),
     })
     public RouterFunction < ServerResponse > orderRoutesDoc() {
         return RouterFunctions.route (

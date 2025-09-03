@@ -17,5 +17,5 @@ public interface OrderRepository {
 
     Mono < Void > deleteById(UUID id);
 
-    Flux < OrderPendingDTO > findPendingOrders(String filterEmail, int page, int size);
+    Flux < OrderPendingDTO > findPendingOrders(UUID filterStatus, String filterEmail, int page, int size);
 }

@@ -59,43 +59,61 @@ public class OrderReactiveRepositoryAdapter extends ReactiveAdapterOperations <
     }
 
     @Override
-    public Flux < OrderPendingDTO > findPendingOrders(String filterEmail, int page, int size) {
+    public Flux<OrderPendingDTO> findPendingOrders(UUID filterStatus, String filterEmail, int page, int size) {
 
         String sql = """
-                        
-                        SELECT o.amount, o.term_months, o.email_address,
-                       t.name AS loan_type, t.interest_rate,
-                       s.name AS order_status,
-                       COALESCE(SUM(
-                               CASE
-                                   WHEN s.id_status = '1603cbb9-f4ad-4112-9804-c3d4c04a48f5' THEN
-                                       (o.amount * t.interest_rate) / (1 - POWER(1 + t.interest_rate, -o.term_months))
-                                   ELSE 0
-                               END
-                           ) OVER (PARTITION BY o.email_address), 0) AS deuda_total_mensual_solicitudes_aprobadas
-                FROM orders o
-                         JOIN type_loan t ON o.id_type_loan = t.id_type_loan
-                         JOIN status s ON o.id_status = s.id_status
-                WHERE (:filterEmail IS NULL OR o.email_address LIKE :filterEmail)
-                ORDER BY o.id_order DESC
-                LIMIT :limit OFFSET :offset
-                """;
+        SELECT o.amount, o.term_months, o.email_address,
+               t.name AS loan_type, t.interest_rate,
+               s.name AS order_status,
+               COALESCE(SUM(
+                   CASE
+                       WHEN s.id_status = '1603cbb9-f4ad-4112-9804-c3d4c04a48f5' THEN
+                           (o.amount * t.interest_rate) / (1 - POWER(1 + t.interest_rate, -o.term_months))
+                       ELSE 0
+                   END
+               ) OVER (PARTITION BY o.email_address), 0) AS total_monthly_debt_approved_requests
+        FROM orders o
+                 JOIN type_loan t ON o.id_type_loan = t.id_type_loan
+                 JOIN status s ON o.id_status = s.id_status
+        WHERE (:filterEmail IS NULL OR o.email_address LIKE :filterEmail)
+          AND (:filterStatus IS NULL OR s.id_status = :filterStatus)
+        ORDER BY o.id_order DESC
+        LIMIT :limit OFFSET :offset
+        """;
 
-        return client.sql(sql)
-                .bind("filterEmail", filterEmail != null ? "%" + filterEmail + "%" : null)
+        String emailFilter = (filterEmail == null || filterEmail.isBlank()) ? null : "%" + filterEmail + "%";
+
+        DatabaseClient.GenericExecuteSpec spec = client.sql(sql)
                 .bind("limit", size)
-                .bind("offset", page * size)
+                .bind("offset", page * size);
+
+        if (emailFilter != null) {
+            spec = spec.bind("filterEmail", emailFilter);
+        } else {
+            spec = spec.bindNull("filterEmail", String.class);
+        }
+
+        if (filterStatus != null) {
+            spec = spec.bind("filterStatus", filterStatus);
+        } else {
+            spec = spec.bindNull("filterStatus", UUID.class);
+        }
+
+        return spec
                 .map((row, metadata) -> OrderPendingDTO.builder()
                         .amount(row.get("amount", BigDecimal.class))
                         .termMonths(row.get("term_months", Integer.class))
-                        .email (row.get("email_address", String.class))
-                        .typeLoan (row.get("loan_type", String.class))
+                        .email(row.get("email_address", String.class))
+                        .typeLoan(row.get("loan_type", String.class))
                         .interestRate(row.get("interest_rate", BigDecimal.class))
-                        .statusOrder (row.get("order_status", String.class))
+                        .statusOrder(row.get("order_status", String.class))
+                        .totalMonthlyDebtApprovedRequests(row.get("total_monthly_debt_approved_requests", BigDecimal.class))
                         .build()
                 )
                 .all();
     }
+
+
 
     private Order toOrder(OrderEntity entity) {
         return mapper.map ( entity, Order.class );
