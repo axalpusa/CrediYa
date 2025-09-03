@@ -87,7 +87,7 @@ class ConfigTest {
                     order.setDocumentId(dto.getDocumentId());
                     order.setEmailAddress(dto.getEmailAddress());
                     order.setIdTypeLoan(dto.getIdTypeLoan());
-                    order.setIdStatus(StatusEnum.PENDENT.getId()); // inicial
+                    order.setIdStatus(StatusEnum.PENDENT.getId());
                     return order;
                 });
 
