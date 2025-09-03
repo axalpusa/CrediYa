@@ -9,9 +9,11 @@ import co.com.pragma.api.handler.OrderHandler;
 import co.com.pragma.api.mapper.OrderMapperDTO;
 import co.com.pragma.api.routerrest.OrderRouterRest;
 import co.com.pragma.api.services.AuthServiceClient;
+import co.com.pragma.model.order.Order;
 import co.com.pragma.usecase.order.OrderUseCase;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -28,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,35 +49,63 @@ class ConfigTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    @Autowired
+    private AuthServiceClient authServiceClient;
+
+    @Autowired
+    private OrderMapperDTO orderMapper;
+
+    @Autowired
+    private OrderUseCase orderUseCase;
+
     @TestConfiguration
     static class MockBeans {
 
         @Bean
         OrderUseCase orderUseCase() {
-            return mock ( OrderUseCase.class );
+            return mock(OrderUseCase.class);
         }
+
         @Bean
         AuthServiceClient authServiceClient() {
-            return mock ( AuthServiceClient.class );
+            return mock(AuthServiceClient.class);
         }
+
         @Bean
         OrderMapperDTO orderDTOMapper() {
-            return mock ( OrderMapperDTO.class );
+            return mock(OrderMapperDTO.class);
         }
     }
-    private OrderRequestDTO buildOrderRequest () {
-        OrderRequestDTO req = new OrderRequestDTO ( );
-        req.setEmailAddress ( "axalpusa1125@gmail.com" );
-        req.setTermMonths ( 12 );
-        req.setAmount ( new BigDecimal ( "1000" ) );
-        req.setDocumentId ( "48295730" );
-        req.setIdStatus ( StatusEnum.PENDENT.getId ( ) );
-        req.setIdTypeLoan ( TypeLoanEnum.TYPE2.getId ( ) );
 
+    private OrderRequestDTO buildOrderRequest() {
+        when(orderMapper.toModel(any(OrderRequestDTO.class)))
+                .thenAnswer(invocation -> {
+                    OrderRequestDTO dto = invocation.getArgument(0);
+                    Order order = new Order();
+                    order.setAmount(dto.getAmount());
+                    order.setTermMonths(dto.getTermMonths());
+                    order.setDocumentId(dto.getDocumentId());
+                    order.setEmailAddress(dto.getEmailAddress());
+                    order.setIdTypeLoan(dto.getIdTypeLoan());
+                    order.setIdStatus(StatusEnum.PENDENT.getId()); // inicial
+                    return order;
+                });
+
+        when(orderUseCase.saveOrder(any(Order.class)))
+                .thenAnswer(invocation -> {
+                    Order order = invocation.getArgument(0);
+                    order.setIdOrder(UUID.randomUUID());
+                    return Mono.just(order);
+                });
+
+        OrderRequestDTO req = new OrderRequestDTO();
+        req.setEmailAddress("axalpusa1125@gmail.com");
+        req.setTermMonths(12);
+        req.setAmount(new BigDecimal("1000"));
+        req.setDocumentId("48295730");
+        req.setIdTypeLoan(TypeLoanEnum.TYPE2.getId());
         return req;
     }
-    @Autowired
-    private AuthServiceClient authServiceClient;
 
     @Test
     void securityHeadersShouldBePresent() {
@@ -82,6 +113,7 @@ class ConfigTest {
                 .thenReturn(Mono.just(AuthResponseDTO.builder()
                         .idUser(UUID.randomUUID())
                         .idRol(RolEnum.CLIENT.getId())
+                        .name("axel puertas")
                         .token("Bearer faketoken123")
                         .build()));
 
@@ -91,7 +123,7 @@ class ConfigTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(buildOrderRequest())
                 .exchange()
-                .expectStatus().isOk()
+                .expectStatus().isCreated ()
                 .expectHeader().valueEquals("Content-Security-Policy",
                         "default-src 'self'; frame-ancestors 'self'; form-action 'self'")
                 .expectHeader().value("Strict-Transport-Security", v -> assertTrue(v.startsWith("max-age=31536000")))
