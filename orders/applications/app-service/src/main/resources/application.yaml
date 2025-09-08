@@ -27,7 +27,7 @@ springdoc:
     path: /api/doc/swagger-ui.html
 adapters:
   r2dbc:
-    host: "localhost"
+    host: "db_orders"            #db_orders - localhost
     port: 5432
     database: "orders"
     schema: "public"

@@ -18,14 +18,12 @@ create table users
     email_address character varying UNIQUE,
     address       character varying,
     document_id   character varying,
+    password 	  character varying,
     birth_date    date,
     phone_number  character varying,
     base_salary   decimal(12, 2),
     FOREIGN KEY (id_rol) REFERENCES rol (id_rol)
 );
-
-
-alter table users add column password character varying;
 
 
 INSERT INTO rol (id_rol, name, description)
