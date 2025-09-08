@@ -128,16 +128,5 @@ class ConfigTest {
         );
     }
 
-   /* @Test
-    void rolSecurityHeadersShouldBePresent1() {
-        UUID idRolUser = UUID.fromString ( "a71e243b-e901-4e6e-b521-85ff39ac2f3e" );
-        WebTestClient.ResponseSpec response = webTestClient.post ( )
-                .uri ( ApiPaths.USERS )
-                .contentType ( MediaType.APPLICATION_JSON )
-                .bodyValue ( buildUserRequest ( idRolUser ) )
-                .exchange ( )
-                .expectStatus ( ).isOk ( );
-        expectSecurityHeaders ( response );
-    }*/
 
 }

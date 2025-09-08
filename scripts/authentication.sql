@@ -28,3 +28,9 @@ create table users
 alter table users add column password character varying;
 
 
+INSERT INTO rol (id_rol, name, description)
+VALUES ('facbe723-85f2-4f5a-92d6-a4a4a3a5b8ca', 'ADMIN', 'ADMIN');
+INSERT INTO rol (id_rol, name, description)
+VALUES ('a71e243b-e901-4e6e-b521-85ff39ac2f3e', 'CLIENT', 'CLIENT');
+INSERT INTO rol (id_rol, name, description)
+VALUES ('beaed8b3-7090-4c58-a3d5-7578ce4f1b6a', 'ASSESSOR', 'ASSESSOR');

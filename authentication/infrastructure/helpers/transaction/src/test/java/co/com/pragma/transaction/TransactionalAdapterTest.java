@@ -44,4 +44,6 @@ public class TransactionalAdapterTest {
                 .verifyComplete ( );
         verify ( transactionalOperator ).transactional ( flux );
     }
+
+
 }

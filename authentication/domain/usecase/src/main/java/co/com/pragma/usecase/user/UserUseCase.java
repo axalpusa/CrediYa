@@ -47,7 +47,7 @@ public class UserUseCase {
                 .switchIfEmpty ( Mono.just ( user ) );
     }
 
-    private boolean isBlank(String value) {
+    public boolean isBlank(String value) {
         return value == null || value.trim ( ).isEmpty ( );
     }
 

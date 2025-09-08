@@ -119,4 +119,68 @@ class RouterRolHandlerTest {
                 .jsonPath("$.errors[0]").isEqualTo("Name is required.");
     }
 
+    @Test
+    @DisplayName("GET /api/v1/rol/{id} - found")
+    void getRolById() {
+        RolRequestDTO req = buildRequest();
+        Rol model = buildModelFromReq(req);
+
+        when(rolUseCase.getRolById(model.getIdRol()))
+                .thenReturn(Mono.just(model));
+
+        webTestClient.get()
+                .uri("/api/v1/rol/{idRol}", model.getIdRol())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.idRol").isEqualTo(model.getIdRol().toString())
+                .jsonPath("$.name").isEqualTo(model.getName());
+    }
+
+    @Test
+    void testUpdateRol() {
+        UUID uuid = UUID.randomUUID();
+        RolResponseDTO dto = new RolResponseDTO();
+        dto.setIdRol(uuid);
+        dto.setName("Rol");
+
+        Rol saverdRol = new Rol();
+        saverdRol.setIdRol(dto.getIdRol());
+        saverdRol.setName(dto.getName());
+
+        when(objectMapper.convertValue(any(RolResponseDTO.class), eq(Rol.class)))
+                .thenReturn(saverdRol);
+
+        when(rolUseCase.updateRol(any(Rol.class))).thenReturn(Mono.just(saverdRol));
+
+        webTestClient.put()
+                .uri("/api/v1/rol")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.idRol").isEqualTo(dto.getIdRol().toString())
+                .jsonPath("$.name").isEqualTo("Rol");
+    }
+    @Test
+    void testDeleteRolSuccess() {
+        UUID rolId = UUID.randomUUID();
+
+        when(rolUseCase.deleteRolById(rolId)).thenReturn(Mono.empty());
+
+        webTestClient.delete()
+                .uri("/api/v1/rol/{idRol}", rolId)
+                .exchange()
+                .expectStatus().isNoContent();
+    }
+
+    @Test
+    void testDeleteRolEmptyId() {
+        webTestClient.delete()
+                .uri("/api/v1/ol/{idRol}", "")
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
 }

@@ -169,5 +169,87 @@ class RouterUserHandlerTest {
                 .expectBody ( )
                 .jsonPath ( "$.errors[0]" ).isEqualTo ( "Email address duplicate." );
     }
+    @Test
+    @DisplayName("GET /api/v1/users/{id} - found")
+    void getUserById() {
+        UserRequestDTO req = buildRequest();
+        User model = buildModelFromReq(req);
+
+        when(userUseCase.getUserById(model.getIdUser()))
+                .thenReturn(Mono.just(model));
+
+        webTestClient.get()
+                .uri("/api/v1/users/{idUser}", model.getIdUser())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.idUser").isEqualTo(model.getIdUser().toString())
+                .jsonPath("$.firstName").isEqualTo(model.getFirstName());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/users/email/{email} - found")
+    void getUserByEmail() {
+        UserRequestDTO req = buildRequest();
+        User model = buildModelFromReq(req);
+
+        when(userUseCase.findByEmailAddress(model.getEmailAddress()))
+                .thenReturn(Mono.just(model));
+
+        webTestClient.get()
+                .uri("/api/v1/users/byEmail/{email}", model.getEmailAddress())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.emailAddress").isEqualTo(model.getEmailAddress());
+    }
+
+    @Test
+    void testUpdateUser() {
+        UUID uuid = UUID.randomUUID();
+        UserResponseDTO dto = new UserResponseDTO();
+        dto.setIdUser(uuid);
+        dto.setFirstName("Axel");
+
+        User savedUser = new User();
+        savedUser.setIdUser(dto.getIdUser());
+        savedUser.setFirstName(dto.getFirstName());
+
+        when(objectMapper.convertValue(any(UserResponseDTO.class), eq(User.class)))
+                .thenReturn(savedUser);
+
+        when(userUseCase.updateUser(any(User.class))).thenReturn(Mono.just(savedUser));
+
+        webTestClient.put()
+                .uri("/api/v1/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.idUser").isEqualTo(dto.getIdUser().toString())
+                .jsonPath("$.firstName").isEqualTo("Axel");
+    }
+
+    @Test
+    void testDeleteUserSuccess() {
+        UUID userId = UUID.randomUUID();
+
+        when(userUseCase.deleteUserById(userId)).thenReturn(Mono.empty());
+
+        webTestClient.delete()
+                .uri("/api/v1/users/{idUser}", userId)
+                .exchange()
+                .expectStatus().isNoContent();
+    }
+
+    @Test
+    void testDeleteUserEmptyId() {
+        webTestClient.delete()
+                .uri("/api/v1/users/{idUser}", "")
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
 
 }
