@@ -4,10 +4,12 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.StatusRequestDTO;
 import co.com.pragma.api.dto.response.StatusResponseDTO;
 import co.com.pragma.api.mapper.StatusMapperDTO;
+import co.com.pragma.model.order.Order;
 import co.com.pragma.model.status.Status;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.status.StatusUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import exceptions.NotFoundException;
 import exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -43,23 +45,20 @@ public class StatusHandler {
                                 .created ( URI.create ( ApiPaths.STATUS + status.getIdStatus ( ) ) )
                                 .contentType ( MediaType.APPLICATION_JSON )
                                 .bodyValue ( status ) )
-                        .onErrorResume ( ValidationException.class, ex ->
-                                ServerResponse.badRequest ( )
-                                        .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                        ).onErrorResume ( e ->
-                                ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of (
-                                                "message", "Unexpected error occurred",
-                                                "details", e.getMessage ( )
-                                        ) )
-                        )
         );
     }
 
     public Mono < ServerResponse > listenUpdateStatus(ServerRequest request) {
         return request.bodyToMono ( StatusResponseDTO.class )
-                .map ( status -> objectMapper.convertValue ( status, Status.class ) )
+                .flatMap ( dto -> statusUseCase.getStatusById ( dto.getIdStatus ( ) )
+                        .switchIfEmpty ( Mono.error ( new NotFoundException ( "Status not found" ) ) )
+                        .map ( existing -> {
+                            Status partial = objectMapper.convertValue ( dto, Status.class );
+                            if ( partial == null ) partial = new Status ( );
+                            existing.merge ( partial );
+                            return existing;
+                        } )
+                )
                 .flatMap ( statusUseCase::updateStatus )
                 .flatMap ( savedStatus -> ServerResponse.ok ( )
                         .contentType ( MediaType.APPLICATION_JSON )

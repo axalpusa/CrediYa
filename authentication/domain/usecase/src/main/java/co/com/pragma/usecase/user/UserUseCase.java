@@ -19,10 +19,8 @@ public class UserUseCase {
     public Mono < User > saveUser(User user) {
         return validateUser ( user )
                 .flatMap ( this::saveNewUser )
-                .onErrorResume ( e ->
-                        Mono.error ( new ValidationException ( Collections.singletonList ( e.getMessage ( ) ) ) ) );
+                ;
     }
-
     private Mono < User > validateUser(User user) {
         List < String > errors = new ArrayList <> ( );
 

@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: axel
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id_order
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  defaultValueComputed: uuid_generate_v4()
+              - column:
+                  name: amount
+                  type: decimal(12,2)
+              - column:
+                  name: term_months
+                  type: int
+              - column:
+                  name: document_id
+                  type: varchar(15)
+              - column:
+                  name: email_address
+                  type: varchar(200)
+              - column:
+                  name: id_status
+                  type: uuid
+              - column:
+                  name: id_type_loan
+                  type: uuid
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: id_status
+            referencedTableName: status
+            referencedColumnNames: id_status
+            constraintName: fk_orders_status
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: id_type_loan
+            referencedTableName: type_loan
+            referencedColumnNames: id_type_loan
+            constraintName: fk_orders_type_loan

@@ -16,9 +16,9 @@ import co.com.pragma.model.order.Order;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.order.OrderUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import exceptions.NotFoundException;
 import exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -28,7 +28,6 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -60,29 +59,36 @@ public class OrderHandler {
                                                         .bodyValue ( savedOrder )
                                         )
                         )
-                        .onErrorResume ( this::handleError )
         );
     }
 
     public Mono < ServerResponse > listenReportOrder(ServerRequest request) {
-        return request.bodyToMono ( ReportRequestDTO.class )
-                .flatMap ( req ->
-                        validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
-                                .flatMap ( authUser ->
-                                        orderUseCase.findPendingOrders ( req.getStatus ( ), req.getEmail ( ), req.getPage ( ), req.getSize ( ) )
-                                                .flatMap ( order ->
-                                                        authServiceClient.getUserByEmailAddress ( authUser.getToken ( ), order.getEmail ( ) )
-                                                                .onErrorResume ( WebClientResponseException.NotFound.class, ex -> Mono.empty ( ) )
-                                                                .map ( user -> mapToReportDTO ( order, user ) )
-                                                )
-                                                .collectList ( )
+        UUID filterStatus = request.queryParam("status")
+                .filter(s -> !s.isBlank())
+                .map(UUID::fromString)
+                .orElse(null);
+        int page = request.queryParam ( "page" )
+                .map ( Integer::parseInt )
+                .orElse ( 0 );
+        int size = request.queryParam ( "size" )
+                .map ( Integer::parseInt )
+                .orElse ( 10 );
+        return validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
+                .flatMap ( authUser ->
+                        orderUseCase.findPendingOrders ( filterStatus, page, size )
+                                .flatMap ( order ->
+                                        authServiceClient.getUserByEmailAddress ( authUser.getToken ( ), order.getEmail ( ) )
+                                                .onErrorResume ( WebClientResponseException.NotFound.class, ex -> Mono.empty ( ) )
+                                                .map ( user -> mapToReportDTO ( order, user ) )
                                 )
+                                .collectList ( )
                 )
                 .flatMap ( list -> ServerResponse.ok ( )
                         .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( list ) )
-                .onErrorResume ( this::handleError );
+                        .bodyValue ( list )
+                );
     }
+
 
     private ReportResponseDTO mapToReportDTO(OrderPendingDTO order, UserReportResponseDTO user) {
         ReportResponseDTO report = new ReportResponseDTO ( );
@@ -96,26 +102,6 @@ public class OrderHandler {
         report.setTermMonths ( order.getTermMonths ( ) );
         report.setTotalMonthlyDebtApprovedRequests ( order.getTotalMonthlyDebtApprovedRequests ( ) );
         return report;
-    }
-
-    private Mono < ServerResponse > handleError(Throwable ex) {
-        if ( ex instanceof ValidationException ve ) {
-            return ServerResponse.badRequest ( )
-                    .contentType ( MediaType.APPLICATION_JSON )
-                    .bodyValue ( Map.of ( "errors", ve.getErrors ( ) ) );
-        } else if ( ex instanceof WebClientResponseException.Unauthorized ) {
-            return ServerResponse.status ( HttpStatus.UNAUTHORIZED )
-                    .contentType ( MediaType.APPLICATION_JSON )
-                    .bodyValue ( Map.of ( "errors", "Token inválido o expirado" ) );
-        } else if ( ex instanceof WebClientResponseException.Forbidden ) {
-            return ServerResponse.status ( HttpStatus.FORBIDDEN )
-                    .contentType ( MediaType.APPLICATION_JSON )
-                    .bodyValue ( Map.of ( "errors", "Acceso denegado" ) );
-        } else {
-            return ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                    .contentType ( MediaType.APPLICATION_JSON )
-                    .bodyValue ( Map.of ( "errors", ex.getMessage ( ) ) );
-        }
     }
 
     private Mono < AuthResponseDTO > validateUserToken(ServerRequest request, UUID idRol) {
@@ -138,7 +124,15 @@ public class OrderHandler {
 
     public Mono < ServerResponse > listenUpdateOrder(ServerRequest request) {
         return request.bodyToMono ( OrderResponseDTO.class )
-                .map ( order -> objectMapper.convertValue ( order, Order.class ) )
+                .flatMap ( dto -> orderUseCase.getOrderById ( dto.getIdOrder ( ) )
+                        .switchIfEmpty ( Mono.error ( new NotFoundException ( "Order not found" ) ) )
+                        .map ( existing -> {
+                            Order partial = objectMapper.convertValue ( dto, Order.class );
+                            if ( partial == null ) partial = new Order ( );
+                            existing.merge ( partial );
+                            return existing;
+                        } )
+                )
                 .flatMap ( orderUseCase::updateOrder )
                 .flatMap ( savedOrder -> ServerResponse.ok ( )
                         .contentType ( MediaType.APPLICATION_JSON )

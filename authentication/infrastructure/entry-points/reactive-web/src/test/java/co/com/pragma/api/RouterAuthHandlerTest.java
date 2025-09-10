@@ -1,6 +1,7 @@
 package co.com.pragma.api;
 
 import co.com.pragma.api.config.ApiPaths;
+import co.com.pragma.api.config.GlobalErrorHandler;
 import co.com.pragma.api.dto.request.AuthRequestDTO;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.enums.RolEnum;
@@ -10,6 +11,7 @@ import co.com.pragma.api.routerrest.AuthRouterRest;
 import co.com.pragma.model.auth.Auth;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.authentication.AuthUseCase;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import exceptions.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,16 +21,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.server.HandlerStrategies;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,6 +43,7 @@ class RouterAuthHandlerTest {
     private JwtService jwtService;
     private PasswordEncoder passwordEncoder;
     private TransactionalAdapter transactionalAdapter;
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setup() {
@@ -48,13 +51,18 @@ class RouterAuthHandlerTest {
         jwtService = mock ( JwtService.class );
         passwordEncoder = mock ( PasswordEncoder.class );
         transactionalAdapter = mock ( TransactionalAdapter.class );
+        objectMapper = new ObjectMapper();
 
         AuthHandler authHandler = new AuthHandler ( authUseCase, jwtService, passwordEncoder, transactionalAdapter );
         AuthRouterRest authRouterRest = new AuthRouterRest ( );
+        GlobalErrorHandler globalErrorHandler = new GlobalErrorHandler (objectMapper);
 
-        webTestClient = WebTestClient.bindToRouterFunction (
-                authRouterRest.authRouterFunction ( authHandler )
-        ).build ( );
+        webTestClient = WebTestClient
+                .bindToRouterFunction(authRouterRest.authRouterFunction(authHandler))
+                .handlerStrategies( HandlerStrategies.builder()
+                        .exceptionHandler(globalErrorHandler)
+                        .build())
+                .build();
     }
 
     private AuthRequestDTO buildRequest() {
@@ -125,14 +133,39 @@ class RouterAuthHandlerTest {
 
         when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
                 .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
-        webTestClient.post ( )
-                .uri ( ApiPaths.LOGIN )
-                .contentType ( MediaType.APPLICATION_JSON )
-                .bodyValue ( new AuthRequestDTO ( "axalpusa@gmail.com", "axalpusa" ) )
-                .exchange ( )
-                .expectStatus ( ).isUnauthorized ( )
-                .expectHeader ( ).contentType ( MediaType.APPLICATION_JSON )
-                .expectBody ( )
-                .jsonPath ( "$.error" ).isEqualTo ( "Invalid credentials" );
+
+        webTestClient.post()
+                .uri(ApiPaths.LOGIN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new AuthRequestDTO("axalpusa@gmail.com", "axalpusa"))
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Unauthorized")
+                .jsonPath("$.details").isEqualTo("Invalid credentials");
     }
+
+    @Test
+    void loginUnauthorizedWithBlock() {
+        when(authUseCase.login(
+                eq("axalpusa@gmail.com"),
+                eq("axalpusa"),
+                any(),
+                any()
+        )).thenReturn(Mono.error(new UnauthorizedException("Invalid credentials")));
+
+        assertThrows(
+                UnauthorizedException.class,
+                () -> authUseCase.login(
+                        "axalpusa@gmail.com",
+                        "axalpusa",
+                        (idUser, idRol) -> "fakeToken",
+                        (raw, encoded) -> false
+                ).block()
+        );
+
+    }
+
+
 }

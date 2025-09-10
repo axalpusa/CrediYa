@@ -27,12 +27,15 @@ springdoc:
     path: /api/doc/swagger-ui.html
 adapters:
   r2dbc:
-    host: "db_orders"            #db_orders - localhost
-    port: 5432
-    database: "orders"
+    host: ${DB_HOST:localhost}
+    port: ${DB_PORT:5432}
+    database: ${DB_AUTH_NAME:orders}
     schema: "public"
-    username: "postgres"
-    password: "root"
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:root}
+liquibase:
+  change-log: classpath:db/changelog/db.changelog-master.yaml
+  enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8091"
 logging:

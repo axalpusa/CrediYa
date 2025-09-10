@@ -58,7 +58,7 @@ public class OrderReactiveRepositoryAdapter extends ReactiveAdapterOperations <
     }
 
     @Override
-    public Flux<OrderPendingDTO> findPendingOrders(UUID filterStatus, String filterEmail, int page, int size) {
+    public Flux<OrderPendingDTO> findPendingOrders(UUID filterStatus, int page, int size) {
 
         String sql = """
         SELECT o.amount, o.term_months, o.email_address,
@@ -74,23 +74,14 @@ public class OrderReactiveRepositoryAdapter extends ReactiveAdapterOperations <
         FROM orders o
                  JOIN type_loan t ON o.id_type_loan = t.id_type_loan
                  JOIN status s ON o.id_status = s.id_status
-        WHERE (:filterEmail IS NULL OR o.email_address LIKE :filterEmail)
-          AND (:filterStatus IS NULL OR s.id_status = :filterStatus)
+        WHERE (:filterStatus IS NULL OR s.id_status = :filterStatus)
         ORDER BY o.id_order DESC
         LIMIT :limit OFFSET :offset
         """;
 
-        String emailFilter = (filterEmail == null || filterEmail.isBlank()) ? null : "%" + filterEmail + "%";
-
         DatabaseClient.GenericExecuteSpec spec = client.sql(sql)
                 .bind("limit", size)
                 .bind("offset", page * size);
-
-        if (emailFilter != null) {
-            spec = spec.bind("filterEmail", emailFilter);
-        } else {
-            spec = spec.bindNull("filterEmail", String.class);
-        }
 
         if (filterStatus != null) {
             spec = spec.bind("filterStatus", filterStatus);

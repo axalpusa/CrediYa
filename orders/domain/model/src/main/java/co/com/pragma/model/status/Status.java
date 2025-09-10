@@ -17,4 +17,9 @@ public class Status {
     private UUID idStatus;
     private String name;
     private String description;
+
+    public void merge(Status other) {
+        if ( other.getName ( ) != null ) this.name = other.getName ( );
+        if ( other.getDescription ( ) != null ) this.description = other.getDescription ( );
+    }
 }

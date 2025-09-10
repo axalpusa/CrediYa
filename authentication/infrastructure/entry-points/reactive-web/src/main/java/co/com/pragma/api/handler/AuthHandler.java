@@ -5,12 +5,10 @@ import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.jwt.JwtService;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.authentication.AuthUseCase;
-import exceptions.BadRequestException;
-import exceptions.NotFoundException;
 import exceptions.UnauthorizedException;
+import exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -18,7 +16,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -44,21 +42,6 @@ public class AuthHandler {
                         .flatMap ( authResult -> ServerResponse.ok ( )
                                 .contentType ( MediaType.APPLICATION_JSON )
                                 .bodyValue ( authResult ) )
-                        .onErrorResume ( e -> {
-                            if ( e instanceof UnauthorizedException ) {
-                                return ServerResponse.status ( HttpStatus.UNAUTHORIZED )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of ( "error", e.getMessage ( ) ) );
-                            } else if ( e instanceof NotFoundException ) {
-                                return ServerResponse.status ( HttpStatus.NOT_FOUND )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of ( "error", e.getMessage ( ) ) );
-                            } else {
-                                return ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of ( "error", "Unexpected error: " + e.getMessage ( ) ) );
-                            }
-                        } )
         );
     }
 
@@ -66,17 +49,13 @@ public class AuthHandler {
         String authHeader = request.headers ( ).firstHeader ( "Authorization" );
 
         if ( authHeader == null || !authHeader.startsWith ( "Bearer " ) ) {
-            return ServerResponse.badRequest ( )
-                    .contentType ( MediaType.APPLICATION_JSON )
-                    .bodyValue ( Map.of ( "error", "Missing or invalid Authorization header" ) );
+            throw new ValidationException ( List.of ( "Missing or invalid Authorization header" ) );
         }
 
         String token = authHeader.substring ( 7 );
 
         if ( !jwtService.isTokenValid ( token ) ) {
-            return ServerResponse.status ( HttpStatus.UNAUTHORIZED )
-                    .contentType ( MediaType.APPLICATION_JSON )
-                    .bodyValue ( Map.of ( "error", "Invalid or expired token" ) );
+            throw new UnauthorizedException ( "Invalid or expired token" );
         }
 
         UUID idUser = jwtService.extractUserId ( token );

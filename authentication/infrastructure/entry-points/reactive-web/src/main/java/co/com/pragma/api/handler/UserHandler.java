@@ -5,10 +5,12 @@ import co.com.pragma.api.dto.request.UserRequestDTO;
 import co.com.pragma.api.dto.response.UserReportResponseDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.mapper.UserMapperDTO;
+import co.com.pragma.model.rol.Rol;
 import co.com.pragma.model.user.User;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import exceptions.NotFoundException;
 import exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,36 +46,31 @@ public class UserHandler {
                         .switchIfEmpty ( Mono.error ( new ValidationException (
                                 List.of ( "Request body cannot be empty" )
                         ) ) )
-                        // .map(userMapperDTO::toModel)
                         .flatMap ( dto -> Mono.justOrEmpty ( userMapperDTO.toModel ( dto ) ) )
                         .map ( user -> {
                             user.setPassword ( passwordEncoder.encode ( user.getPassword ( ) ) );
                             return user;
                         } )
                         .flatMap ( userUseCase::saveUser )
-                        .flatMap ( user -> ServerResponse
-                                .created ( URI.create ( ApiPaths.USERS + user.getIdUser ( ) ) )
-                                .contentType ( MediaType.APPLICATION_JSON )
-                                .bodyValue ( user ) )
-                        .onErrorResume ( ValidationException.class, ex ->
-                                ServerResponse.badRequest ( )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                        )
-                        .onErrorResume ( e ->
-                                ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of (
-                                                "message", "Unexpected error occurred",
-                                                "details", e.getMessage ( )
-                                        ) ) )
+                        .flatMap(user -> ServerResponse
+                                .created(URI.create(ApiPaths.USERS + user.getIdUser()))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(user))
         );
     }
 
 
     public Mono < ServerResponse > listenUpdateUser(ServerRequest serverRequest) {
         return serverRequest.bodyToMono ( UserResponseDTO.class )
-                .map ( user -> objectMapper.convertValue ( user, User.class ) )
+                .flatMap(dto -> userUseCase.getUserById (dto.getIdUser ())
+                        .switchIfEmpty(Mono.error(new NotFoundException ("User not found")))
+                        .map(existingUser -> {
+                            User partial = objectMapper.convertValue(dto, User.class);
+                            if (partial == null) partial = new User ();
+                            existingUser.merge(partial);
+                            return existingUser;
+                        })
+                )
                 .flatMap ( userUseCase::updateUser )
                 .flatMap ( savedUser -> ServerResponse.ok ( )
                         .contentType ( MediaType.APPLICATION_JSON )

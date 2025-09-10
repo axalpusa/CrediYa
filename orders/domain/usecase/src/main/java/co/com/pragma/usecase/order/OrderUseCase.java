@@ -64,8 +64,8 @@ public class OrderUseCase {
         return orderRepository.findAll ( );
     }
 
-    public Flux < OrderPendingDTO > findPendingOrders(UUID filterStatus,String filterEmail, int page, int size) {
-        return orderRepository.findPendingOrders (filterStatus, filterEmail, page, size );
+    public Flux < OrderPendingDTO > findPendingOrders(UUID filterStatus, int page, int size) {
+        return orderRepository.findPendingOrders ( filterStatus, page, size );
     }
 
     private boolean isBlank(String value) {

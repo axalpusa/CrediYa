@@ -1,11 +1,14 @@
 package co.com.pragma.api;
 
 import co.com.pragma.api.config.ApiPaths;
+import co.com.pragma.api.config.GlobalErrorHandler;
 import co.com.pragma.api.dto.request.UserRequestDTO;
+import co.com.pragma.api.dto.response.RolResponseDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.handler.UserHandler;
 import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.api.routerrest.UserRouterRest;
+import co.com.pragma.model.rol.Rol;
 import co.com.pragma.model.user.User;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
@@ -19,6 +22,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.server.HandlerStrategies;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -28,7 +33,12 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RouterUserHandlerTest {
@@ -42,6 +52,7 @@ class RouterUserHandlerTest {
     private ObjectMapper objectMapper;
 
     private PasswordEncoder passwordEncoder;
+
     private TransactionalAdapter transactionalAdapter;
 
     @BeforeEach
@@ -51,12 +62,16 @@ class RouterUserHandlerTest {
         objectMapper = mock ( ObjectMapper.class );
         passwordEncoder = mock ( PasswordEncoder.class );
         transactionalAdapter = mock ( TransactionalAdapter.class );
+        objectMapper = new ObjectMapper ( );
         UserHandler userHandler = new UserHandler ( userUseCase, objectMapper, userMapper, passwordEncoder, transactionalAdapter );
         UserRouterRest userRouterRest = new UserRouterRest ( );
-
-        webTestClient = WebTestClient.bindToRouterFunction (
-                userRouterRest.userRouterFunction ( userHandler )
-        ).build ( );
+        GlobalErrorHandler globalErrorHandler = new GlobalErrorHandler ( objectMapper );
+        webTestClient = WebTestClient
+                .bindToRouterFunction ( userRouterRest.userRouterFunction ( userHandler )
+                ).handlerStrategies ( HandlerStrategies.builder ( )
+                        .exceptionHandler ( globalErrorHandler )
+                        .build ( ) )
+                .build ( );
     }
 
     private UserRequestDTO buildRequest() {
@@ -146,7 +161,7 @@ class RouterUserHandlerTest {
                 .exchange ( )
                 .expectStatus ( ).isBadRequest ( )
                 .expectBody ( )
-                .jsonPath ( "$.errors[0]" ).isEqualTo ( "First name is required." );
+                .jsonPath ( "$.details" ).isEqualTo ( "First name is required." );
     }
 
     @Test
@@ -167,89 +182,145 @@ class RouterUserHandlerTest {
                 .exchange ( )
                 .expectStatus ( ).isBadRequest ( )
                 .expectBody ( )
-                .jsonPath ( "$.errors[0]" ).isEqualTo ( "Email address duplicate." );
+                .jsonPath ( "$.details" ).isEqualTo ( "Email address duplicate." );
     }
+
     @Test
     @DisplayName("GET /api/v1/users/{id} - found")
     void getUserById() {
-        UserRequestDTO req = buildRequest();
-        User model = buildModelFromReq(req);
+        UserRequestDTO req = buildRequest ( );
+        User model = buildModelFromReq ( req );
 
-        when(userUseCase.getUserById(model.getIdUser()))
-                .thenReturn(Mono.just(model));
+        when ( userUseCase.getUserById ( model.getIdUser ( ) ) )
+                .thenReturn ( Mono.just ( model ) );
 
-        webTestClient.get()
-                .uri("/api/v1/users/{idUser}", model.getIdUser())
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.idUser").isEqualTo(model.getIdUser().toString())
-                .jsonPath("$.firstName").isEqualTo(model.getFirstName());
+        webTestClient.get ( )
+                .uri ( "/api/v1/users/{idUser}", model.getIdUser ( ) )
+                .exchange ( )
+                .expectStatus ( ).isOk ( )
+                .expectBody ( )
+                .jsonPath ( "$.idUser" ).isEqualTo ( model.getIdUser ( ).toString ( ) )
+                .jsonPath ( "$.firstName" ).isEqualTo ( model.getFirstName ( ) );
     }
 
     @Test
     @DisplayName("GET /api/v1/users/email/{email} - found")
     void getUserByEmail() {
-        UserRequestDTO req = buildRequest();
-        User model = buildModelFromReq(req);
+        UserRequestDTO req = buildRequest ( );
+        User model = buildModelFromReq ( req );
 
-        when(userUseCase.findByEmailAddress(model.getEmailAddress()))
-                .thenReturn(Mono.just(model));
+        when ( userUseCase.findByEmailAddress ( model.getEmailAddress ( ) ) )
+                .thenReturn ( Mono.just ( model ) );
 
-        webTestClient.get()
-                .uri("/api/v1/users/byEmail/{email}", model.getEmailAddress())
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.emailAddress").isEqualTo(model.getEmailAddress());
+        webTestClient.get ( )
+                .uri ( "/api/v1/users/byEmail/{email}", model.getEmailAddress ( ) )
+                .exchange ( )
+                .expectStatus ( ).isOk ( )
+                .expectBody ( )
+                .jsonPath ( "$.emailAddress" ).isEqualTo ( model.getEmailAddress ( ) );
     }
 
     @Test
     void testUpdateUser() {
-        UUID uuid = UUID.randomUUID();
-        UserResponseDTO dto = new UserResponseDTO();
-        dto.setIdUser(uuid);
-        dto.setFirstName("Axel");
+        UUID uuid = UUID.randomUUID ( );
+        UUID idRolUser = UUID.fromString ( "a71e243b-e901-4e6e-b521-85ff39ac2f3e" );
+        UserResponseDTO dto = new UserResponseDTO ( );
+        dto.setIdUser ( uuid );
+        dto.setFirstName ( "Nuevo nombre" );
 
-        User savedUser = new User();
-        savedUser.setIdUser(dto.getIdUser());
-        savedUser.setFirstName(dto.getFirstName());
+        User existingUser = new User ( );
+        existingUser.setIdUser (uuid);
+        existingUser.setFirstName ( "axel" );
+        existingUser.setLastName ( "Puertas" );
+        existingUser.setAddress ( "Av santa rosa" );
+        existingUser.setEmailAddress ( "axalpusa11125@gmail.com" );
+        existingUser.setBirthDate ( LocalDate.parse ( "01-05-1994", DateTimeFormatter.ofPattern ( "dd-MM-yyyy" ) ) );
+        existingUser.setDocumentId ( "48594859" );
+        existingUser.setPhoneNumber ( "973157252" );
+        existingUser.setBaseSalary ( new BigDecimal ( "700000" ) );
+        existingUser.setPassword ( "$2a$10$mfILaHia4jqInB2mUQ2Vt.0PJxjJoXODUnkzchdHH6hxzPoF6xSjO" );
+        existingUser.setIdRol ( idRolUser );
 
-        when(objectMapper.convertValue(any(UserResponseDTO.class), eq(User.class)))
-                .thenReturn(savedUser);
+        User updatedUser = new User();
+        updatedUser.setIdUser (uuid);
+        updatedUser.setFirstName ( "alexandre" );
+        updatedUser.setLastName ( "Puertas" );
+        updatedUser.setAddress ( "Av santa rosa" );
+        updatedUser.setEmailAddress ( "axalpusa11125@gmail.com" );
+        updatedUser.setBirthDate ( LocalDate.parse ( "01-05-1994", DateTimeFormatter.ofPattern ( "dd-MM-yyyy" ) ) );
+        updatedUser.setDocumentId ( "48594859" );
+        updatedUser.setPhoneNumber ( "973157252" );
+        updatedUser.setBaseSalary ( new BigDecimal ( "700000" ) );
+        updatedUser.setPassword ( "$2a$10$mfILaHia4jqInB2mUQ2Vt.0PJxjJoXODUnkzchdHH6hxzPoF6xSjO" );
+        updatedUser.setIdRol ( idRolUser );
 
-        when(userUseCase.updateUser(any(User.class))).thenReturn(Mono.just(savedUser));
+        when(userUseCase.getUserById (uuid)).thenReturn(Mono.just(existingUser));
+        when(userUseCase.updateUser (any(User.class))).thenReturn(Mono.just(updatedUser));
 
-        webTestClient.put()
-                .uri("/api/v1/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(dto)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.idUser").isEqualTo(dto.getIdUser().toString())
-                .jsonPath("$.firstName").isEqualTo("Axel");
+        webTestClient.put ( )
+                .uri ( "/api/v1/users" )
+                .contentType ( MediaType.APPLICATION_JSON )
+                .bodyValue ( dto )
+                .exchange ( )
+                .expectStatus ( ).isOk ( )
+                .expectBody ( )
+                .jsonPath ( "$.idUser" ).isEqualTo ( dto.getIdUser ( ).toString ( ) )
+                .jsonPath ( "$.firstName" ).isEqualTo ( "alexandre" );
     }
 
     @Test
     void testDeleteUserSuccess() {
-        UUID userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID ( );
 
-        when(userUseCase.deleteUserById(userId)).thenReturn(Mono.empty());
+        when ( userUseCase.deleteUserById ( userId ) ).thenReturn ( Mono.empty ( ) );
 
-        webTestClient.delete()
-                .uri("/api/v1/users/{idUser}", userId)
-                .exchange()
-                .expectStatus().isNoContent();
+        webTestClient.delete ( )
+                .uri ( "/api/v1/users/{idUser}", userId )
+                .exchange ( )
+                .expectStatus ( ).isNoContent ( );
     }
 
     @Test
     void testDeleteUserEmptyId() {
-        webTestClient.delete()
-                .uri("/api/v1/users/{idUser}", "")
-                .exchange()
-                .expectStatus().isNotFound();
+        webTestClient.delete ( )
+                .uri ( "/api/v1/users/{idUser}", "" )
+                .exchange ( )
+                .expectStatus ( ).isNotFound ( );
     }
 
+    @Test
+    @DisplayName("GET /api/v1/users/all - listen all users SSE")
+    void listenGetAllUsers() {
+        User user1 = new User();
+        user1.setIdUser(UUID.randomUUID());
+        user1.setFirstName("John");
+        user1.setLastName("Doe");
+        user1.setEmailAddress("john@example.com");
+        user1.setBaseSalary(BigDecimal.valueOf(5000));
+
+        User user2 = new User();
+        user2.setIdUser(UUID.randomUUID());
+        user2.setFirstName("Jane");
+        user2.setLastName("Doe");
+        user2.setEmailAddress("jane@example.com");
+        user2.setBaseSalary(BigDecimal.valueOf(6000));
+
+        when(userUseCase.getAllUsers()).thenReturn(Flux.just(user1, user2));
+
+        webTestClient.get()
+                .uri("/api/v1/users/all")
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM)
+                .expectBodyList(UserResponseDTO.class)
+                .hasSize(2)
+                .value(users -> {
+                    assert users.get(0).getFirstName().equals("John");
+                    assert users.get(1).getFirstName().equals("Jane");
+                });
+
+        verify(userUseCase, times(1)).getAllUsers();
+    }
 
 }

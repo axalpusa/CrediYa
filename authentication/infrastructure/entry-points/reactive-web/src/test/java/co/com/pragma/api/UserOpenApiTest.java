@@ -18,7 +18,6 @@ class UserOpenApiTest {
     void setUp() {
         userOpenApi = new UserOpenApi();
 
-        // Usamos la ruta dummy para probar que se levanta correctamente
         RouterFunction<ServerResponse> routerFunction = userOpenApi.userRoutesDoc();
         webTestClient = WebTestClient.bindToRouterFunction(routerFunction).build();
     }

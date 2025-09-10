@@ -109,18 +109,4 @@ public class SecurityConfig {
     }
 
 
-    private Mono < AuthorizationDecision > isClientForSelf(Mono < Authentication > authenticationMono,
-                                                           AuthorizationContext context) {
-        return authenticationMono.map ( auth -> {
-            String token = (String) auth.getCredentials ( );
-            UUID roleId = jwtService.extractRoleId ( token );
-            UUID userId = jwtService.extractUserId ( token );
-
-            String pathUserId = context.getVariables ( ).get ( "userId" ).toString ( );
-
-            boolean allowed = roleId.equals ( RolEnum.CLIENT.getId ( ) ) && userId.toString ( ).equals ( pathUserId );
-            return new AuthorizationDecision ( allowed );
-        } ).defaultIfEmpty ( new AuthorizationDecision ( false ) );
-    }
-
 }

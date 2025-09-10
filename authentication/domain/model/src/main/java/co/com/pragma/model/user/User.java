@@ -27,4 +27,17 @@ public class User {
     private String password;
     private BigDecimal baseSalary;
     private UUID idRol;
+
+    public void merge(User other) {
+        if ( other.getFirstName ( ) != null ) this.firstName = other.getFirstName ( );
+        if ( other.getLastName ( ) != null ) this.lastName = other.getLastName ( );
+        if ( other.getEmailAddress ( ) != null ) this.emailAddress = other.getEmailAddress ( );
+        if ( other.getAddress ( ) != null ) this.address = other.getAddress ( );
+        if ( other.getDocumentId ( ) != null ) this.documentId = other.getDocumentId ( );
+        if ( other.getBirthDate ( ) != null ) this.birthDate = other.getBirthDate ( );
+        if ( other.getPhoneNumber ( ) != null ) this.phoneNumber = other.getPhoneNumber ( );
+        if ( other.getPassword ( ) != null ) this.password = other.getPassword ( );
+        if ( other.getBaseSalary ( ) != null ) this.baseSalary = other.getBaseSalary ( );
+        if ( other.getIdRol ( ) != null ) this.idRol = other.getIdRol ( );
+    }
 }

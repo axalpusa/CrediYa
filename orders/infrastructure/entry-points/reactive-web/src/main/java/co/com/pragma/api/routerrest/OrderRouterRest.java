@@ -20,9 +20,10 @@ public class OrderRouterRest {
                 .POST ( ApiPaths.ORDER, handler::listenSaveOrder )
                 .PUT ( ApiPaths.ORDER, handler::listenUpdateOrder )
                 .DELETE ( ApiPaths.ORDERBYID, handler::listenDeleteOrder )
+                .GET ( ApiPaths.REPORT, handler::listenReportOrder )
                 .GET ( ApiPaths.ORDERALL, handler::listenGetAllOrders )
                 .GET ( ApiPaths.ORDERBYID, handler::listenGetOrderById )
-                .POST ( ApiPaths.REPORT, handler::listenReportOrder )
+
                 .build ( );
     }
 }

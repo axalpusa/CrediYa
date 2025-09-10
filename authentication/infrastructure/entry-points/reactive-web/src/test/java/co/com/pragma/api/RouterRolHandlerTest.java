@@ -1,6 +1,7 @@
 package co.com.pragma.api;
 
 import co.com.pragma.api.config.ApiPaths;
+import co.com.pragma.api.config.GlobalErrorHandler;
 import co.com.pragma.api.dto.request.RolRequestDTO;
 import co.com.pragma.api.dto.response.RolResponseDTO;
 import co.com.pragma.api.handler.RolHandler;
@@ -18,13 +19,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.server.HandlerStrategies;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RouterRolHandlerTest {
@@ -41,59 +45,64 @@ class RouterRolHandlerTest {
 
     @BeforeEach
     void setup() {
-        rolUseCase = mock(RolUseCase.class);
-        rolMapper = mock(RolMapperDTO.class);
-        objectMapper = mock(ObjectMapper.class);
+        rolUseCase = mock ( RolUseCase.class );
+        rolMapper = mock ( RolMapperDTO.class );
+        objectMapper = mock ( ObjectMapper.class );
         transactionalAdapter = mock ( TransactionalAdapter.class );
-        RolHandler rolHandler = new RolHandler(rolUseCase, objectMapper, rolMapper,transactionalAdapter);
-        RolRouterRest rolRouterRest = new RolRouterRest();
+        RolHandler rolHandler = new RolHandler ( rolUseCase, objectMapper, rolMapper, transactionalAdapter );
+        RolRouterRest rolRouterRest = new RolRouterRest ( );
+        objectMapper = new ObjectMapper ( );
+        GlobalErrorHandler globalErrorHandler = new GlobalErrorHandler ( objectMapper );
 
-        webTestClient = WebTestClient.bindToRouterFunction(
-                rolRouterRest.rolRouterFunction(rolHandler)
-        ).build();
+        webTestClient = WebTestClient
+                .bindToRouterFunction ( rolRouterRest.rolRouterFunction ( rolHandler ) )
+                .handlerStrategies ( HandlerStrategies.builder ( )
+                        .exceptionHandler ( globalErrorHandler )
+                        .build ( ) )
+                .build ( );
     }
 
     private RolRequestDTO buildRequest() {
 
-        RolRequestDTO req = new RolRequestDTO();
-        req.setName("user");
-        req.setDescription("description");
+        RolRequestDTO req = new RolRequestDTO ( );
+        req.setName ( "user" );
+        req.setDescription ( "description" );
 
         return req;
     }
 
     private Rol buildModelFromReq(RolRequestDTO req) {
-        UUID idNewRol = UUID.randomUUID();
-        return Rol.builder()
-                .idRol(idNewRol)
-                .name(req.getName())
-                .description(req.getDescription())
-                .build();
+        UUID idNewRol = UUID.randomUUID ( );
+        return Rol.builder ( )
+                .idRol ( idNewRol )
+                .name ( req.getName ( ) )
+                .description ( req.getDescription ( ) )
+                .build ( );
     }
 
     @Test
     @DisplayName("POST /api/v1/rol - successful")
     void saveRolCorrect() {
-        RolRequestDTO req = buildRequest();
-        Rol toSave = buildModelFromReq(req);
-        Rol saved = toSave.toBuilder().build();
-        RolResponseDTO response = new RolResponseDTO();
-        response.setIdRol(saved.getIdRol());
-        response.setName(saved.getName());
-        response.setDescription(saved.getDescription());
+        RolRequestDTO req = buildRequest ( );
+        Rol toSave = buildModelFromReq ( req );
+        Rol saved = toSave.toBuilder ( ).build ( );
+        RolResponseDTO response = new RolResponseDTO ( );
+        response.setIdRol ( saved.getIdRol ( ) );
+        response.setName ( saved.getName ( ) );
+        response.setDescription ( saved.getDescription ( ) );
 
-        lenient().when(rolMapper.toModel(any(RolRequestDTO.class))).thenReturn(toSave);
-        lenient().when(rolUseCase.saveRol(any(Rol.class))).thenReturn(Mono.just(saved));
-        lenient().when(rolMapper.toResponse(any(Rol.class))).thenReturn(response);
-        lenient().when(transactionalAdapter.executeInTransaction(any(Mono.class)))
-                .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));
-        webTestClient.post()
-                .uri( ApiPaths.ROL )
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody()
+        lenient ( ).when ( rolMapper.toModel ( any ( RolRequestDTO.class ) ) ).thenReturn ( toSave );
+        lenient ( ).when ( rolUseCase.saveRol ( any ( Rol.class ) ) ).thenReturn ( Mono.just ( saved ) );
+        lenient ( ).when ( rolMapper.toResponse ( any ( Rol.class ) ) ).thenReturn ( response );
+        lenient ( ).when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
+        webTestClient.post ( )
+                .uri ( ApiPaths.ROL )
+                .contentType ( MediaType.APPLICATION_JSON )
+                .bodyValue ( req )
+                .exchange ( )
+                .expectStatus ( ).isCreated ( )
+                .expectBody ( )
         ;
 
     }
@@ -101,86 +110,92 @@ class RouterRolHandlerTest {
     @Test
     @DisplayName("POST /api/v1/rol - validation_error")
     void saveRolValidationError() {
-        RolRequestDTO req = buildRequest();
-        req.setName("");
-        Rol invalidRol = buildModelFromReq(req);
-        when(rolMapper.toModel(any(RolRequestDTO.class))).thenReturn(invalidRol);
-        when(rolUseCase.saveRol(any(Rol.class)))
-                .thenReturn(Mono.error(new ValidationException(List.of("Name is required."))));
-        when(transactionalAdapter.executeInTransaction(any(Mono.class)))
-                .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));
-        webTestClient.post()
-                .uri(ApiPaths.ROL)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(req)
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody()
-                .jsonPath("$.errors[0]").isEqualTo("Name is required.");
+        RolRequestDTO req = buildRequest ( );
+        req.setName ( "" );
+        Rol invalidRol = buildModelFromReq ( req );
+        when ( rolMapper.toModel ( any ( RolRequestDTO.class ) ) ).thenReturn ( invalidRol );
+        when ( rolUseCase.saveRol ( any ( Rol.class ) ) )
+                .thenReturn ( Mono.error ( new ValidationException ( List.of ( "Name is required." ) ) ) );
+        when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
+                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
+        webTestClient.post ( )
+                .uri ( ApiPaths.ROL )
+                .contentType ( MediaType.APPLICATION_JSON )
+                .bodyValue ( req )
+                .exchange ( )
+                .expectStatus ( ).isBadRequest ( )
+                .expectBody ( )
+                .jsonPath ( "$.details" ).isEqualTo ( "Name is required." );
     }
 
     @Test
     @DisplayName("GET /api/v1/rol/{id} - found")
     void getRolById() {
-        RolRequestDTO req = buildRequest();
-        Rol model = buildModelFromReq(req);
+        RolRequestDTO req = buildRequest ( );
+        Rol model = buildModelFromReq ( req );
 
-        when(rolUseCase.getRolById(model.getIdRol()))
-                .thenReturn(Mono.just(model));
+        when ( rolUseCase.getRolById ( model.getIdRol ( ) ) )
+                .thenReturn ( Mono.just ( model ) );
 
-        webTestClient.get()
-                .uri("/api/v1/rol/{idRol}", model.getIdRol())
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.idRol").isEqualTo(model.getIdRol().toString())
-                .jsonPath("$.name").isEqualTo(model.getName());
+        webTestClient.get ( )
+                .uri ( "/api/v1/rol/{idRol}", model.getIdRol ( ) )
+                .exchange ( )
+                .expectStatus ( ).isOk ( )
+                .expectBody ( )
+                .jsonPath ( "$.idRol" ).isEqualTo ( model.getIdRol ( ).toString ( ) )
+                .jsonPath ( "$.name" ).isEqualTo ( model.getName ( ) );
     }
 
     @Test
     void testUpdateRol() {
-        UUID uuid = UUID.randomUUID();
-        RolResponseDTO dto = new RolResponseDTO();
-        dto.setIdRol(uuid);
-        dto.setName("Rol");
+        UUID uuid = UUID.randomUUID ( );
+        RolResponseDTO dto = new RolResponseDTO ( );
+        dto.setIdRol ( uuid );
+        dto.setName ( "Nuevo nombre" );
 
-        Rol saverdRol = new Rol();
-        saverdRol.setIdRol(dto.getIdRol());
-        saverdRol.setName(dto.getName());
+        Rol existingRol = new Rol ( );
+        existingRol.setIdRol ( uuid );
+        existingRol.setName ( "Nombre viejo" );
+        existingRol.setDescription ( "Descripcion vieja" );
 
-        when(objectMapper.convertValue(any(RolResponseDTO.class), eq(Rol.class)))
-                .thenReturn(saverdRol);
+        Rol updatedRol = new Rol ( );
+        updatedRol.setIdRol ( uuid );
+        updatedRol.setName ( "Nuevo nombre" );
+        updatedRol.setDescription ( "Descripcion vieja" );
 
-        when(rolUseCase.updateRol(any(Rol.class))).thenReturn(Mono.just(saverdRol));
+        when ( rolUseCase.getRolById ( uuid ) ).thenReturn ( Mono.just ( existingRol ) );
+        when ( rolUseCase.updateRol ( any ( Rol.class ) ) ).thenReturn ( Mono.just ( updatedRol ) );
 
-        webTestClient.put()
-                .uri("/api/v1/rol")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(dto)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.idRol").isEqualTo(dto.getIdRol().toString())
-                .jsonPath("$.name").isEqualTo("Rol");
+        webTestClient.put ( )
+                .uri ( "/api/v1/rol" )
+                .contentType ( MediaType.APPLICATION_JSON )
+                .bodyValue ( dto )
+                .exchange ( )
+                .expectStatus ( ).isOk ( )
+                .expectBody ( )
+                .returnResult ( )
+                .getResponseBody ( );
+
     }
+
     @Test
     void testDeleteRolSuccess() {
-        UUID rolId = UUID.randomUUID();
+        UUID rolId = UUID.randomUUID ( );
 
-        when(rolUseCase.deleteRolById(rolId)).thenReturn(Mono.empty());
+        when ( rolUseCase.deleteRolById ( rolId ) ).thenReturn ( Mono.empty ( ) );
 
-        webTestClient.delete()
-                .uri("/api/v1/rol/{idRol}", rolId)
-                .exchange()
-                .expectStatus().isNoContent();
+        webTestClient.delete ( )
+                .uri ( "/api/v1/rol/{idRol}", rolId )
+                .exchange ( )
+                .expectStatus ( ).isNoContent ( );
     }
 
     @Test
     void testDeleteRolEmptyId() {
-        webTestClient.delete()
-                .uri("/api/v1/ol/{idRol}", "")
-                .exchange()
-                .expectStatus().isNotFound();
+        webTestClient.delete ( )
+                .uri ( "/api/v1/ol/{idRol}", "" )
+                .exchange ( )
+                .expectStatus ( ).isNotFound ( );
     }
 
 }

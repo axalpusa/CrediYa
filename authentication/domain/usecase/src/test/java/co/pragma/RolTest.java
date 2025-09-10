@@ -12,6 +12,7 @@ import reactor.test.StepVerifier;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,13 +34,13 @@ public class RolTest {
         rol.setName ( "Rol" );
         rol.setDescription ( "Des" );
         rol.setIdRol ( idRolRol );
-    
+
         when ( rolRepository.findById ( id ) ).thenReturn ( Mono.just ( rol ) );
 
-        StepVerifier.create(rolUseCase.getRolById(id))
-                .expectNextMatches(u -> u.getName().equals("Rol") &&
-                        u.getIdRol().equals(idRolRol))
-                .verifyComplete();
+        StepVerifier.create ( rolUseCase.getRolById ( id ) )
+                .expectNextMatches ( u -> u.getName ( ).equals ( "Rol" ) &&
+                        u.getIdRol ( ).equals ( idRolRol ) )
+                .verifyComplete ( );
 
         verify ( rolRepository ).findById ( id );
     }
@@ -51,76 +52,130 @@ public class RolTest {
 
         when ( rolRepository.findById ( id ) ).thenReturn ( Mono.empty ( ) );
 
-        StepVerifier.create(rolUseCase.getRolById(id))
-                .expectErrorMatches(throwable -> throwable instanceof ValidationException &&
-                        throwable.getMessage().contains(id.toString()))
-                .verify();
+        StepVerifier.create ( rolUseCase.getRolById ( id ) )
+                .expectErrorMatches ( throwable -> throwable instanceof ValidationException &&
+                        throwable.getMessage ( ).contains ( id.toString ( ) ) )
+                .verify ( );
 
         verify ( rolRepository ).findById ( id );
     }
+
     @Test
     void shouldSaveRolSuccessfully() {
-        Rol rol = new Rol();
-        rol.setName("Rol");
-        rol.setDescription("Des");
+        Rol rol = new Rol ( );
+        rol.setName ( "Rol" );
+        rol.setDescription ( "Des" );
 
-        when(rolRepository.save(rol)).thenReturn(Mono.just(rol));
+        when ( rolRepository.save ( rol ) ).thenReturn ( Mono.just ( rol ) );
 
-        StepVerifier.create(rolUseCase.saveRol(rol))
-                .expectNextMatches(u ->  u.getName().equals("Rol"))
-                .verifyComplete();
+        StepVerifier.create ( rolUseCase.saveRol ( rol ) )
+                .expectNextMatches ( u -> u.getName ( ).equals ( "Rol" ) )
+                .verifyComplete ( );
 
-        verify(rolRepository).save(rol);
+        verify ( rolRepository ).save ( rol );
     }
 
 
     @Test
     void shouldUpdateRolSuccessfully() {
-        UUID id = UUID.randomUUID();
-        Rol existing = new Rol();
-        existing.setIdRol(id);
-        existing.setName("Rol");
+        UUID id = UUID.randomUUID ( );
+        Rol existing = new Rol ( );
+        existing.setIdRol ( id );
+        existing.setName ( "Rol" );
 
-        Rol updated = new Rol();
-        updated.setIdRol(id);
-        updated.setName("Rol1");
+        Rol updated = new Rol ( );
+        updated.setIdRol ( id );
+        updated.setName ( "Rol1" );
 
-        when(rolRepository.findById(id)).thenReturn(Mono.just(existing));
-        when(rolRepository.save(existing)).thenReturn(Mono.just(updated));
+        when ( rolRepository.findById ( id ) ).thenReturn ( Mono.just ( existing ) );
+        when ( rolRepository.save ( existing ) ).thenReturn ( Mono.just ( updated ) );
 
-        StepVerifier.create(rolUseCase.updateRol(updated))
-                .expectNextMatches(u -> u.getName().equals("Rol1"))
-                .verifyComplete();
+        StepVerifier.create ( rolUseCase.updateRol ( updated ) )
+                .expectNextMatches ( u -> u.getName ( ).equals ( "Rol1" ) )
+                .verifyComplete ( );
 
-        verify(rolRepository).findById(id);
-        verify(rolRepository).save(existing);
+        verify ( rolRepository ).findById ( id );
+        verify ( rolRepository ).save ( existing );
     }
 
     @Test
     void shouldDeleteRolSuccessfully() {
-        UUID id = UUID.randomUUID();
+        UUID id = UUID.randomUUID ( );
 
-        when(rolRepository.deleteById(id)).thenReturn(Mono.empty());
+        when ( rolRepository.deleteById ( id ) ).thenReturn ( Mono.empty ( ) );
 
-        StepVerifier.create(rolUseCase.deleteRolById(id))
-                .verifyComplete();
+        StepVerifier.create ( rolUseCase.deleteRolById ( id ) )
+                .verifyComplete ( );
 
-        verify(rolRepository).deleteById(id);
+        verify ( rolRepository ).deleteById ( id );
     }
 
     @Test
     void shouldGetAllRolsSuccessfully() {
-        Rol rol = new Rol();
-        rol.setName("Rol");
+        Rol rol = new Rol ( );
+        rol.setName ( "Rol" );
 
-        when(rolRepository.findAll()).thenReturn(reactor.core.publisher.Flux.just(rol));
+        when ( rolRepository.findAll ( ) ).thenReturn ( reactor.core.publisher.Flux.just ( rol ) );
 
-        StepVerifier.create(rolUseCase.getAllRol())
-                .expectNextMatches(u -> u.getName().equals("Rol"))
-                .verifyComplete();
+        StepVerifier.create ( rolUseCase.getAllRol ( ) )
+                .expectNextMatches ( u -> u.getName ( ).equals ( "Rol" ) )
+                .verifyComplete ( );
 
-        verify(rolRepository).findAll();
+        verify ( rolRepository ).findAll ( );
     }
-    
-   
+
+    @Test
+    void merge_shouldUpdateNameAndDescription_whenOtherHasValues() {
+        UUID id = UUID.randomUUID ( );
+        Rol original = Rol.builder ( )
+                .idRol ( id )
+                .name ( "Admin" )
+                .description ( "Administrator role" )
+                .build ( );
+
+        Rol other = Rol.builder ( )
+                .name ( "Super Admin" )
+                .description ( "Updated description" )
+                .build ( );
+
+        original.merge ( other );
+
+        assertThat ( original.getName ( ) ).isEqualTo ( "Super Admin" );
+        assertThat ( original.getDescription ( ) ).isEqualTo ( "Updated description" );
+        assertThat ( original.getIdRol ( ) ).isEqualTo ( id );
+    }
+
+    @Test
+    void merge_shouldNotUpdate_whenOtherHasNullFields() {
+        UUID id = UUID.randomUUID ( );
+        Rol original = Rol.builder ( )
+                .idRol ( id )
+                .name ( "Admin" )
+                .description ( "Administrator role" )
+                .build ( );
+
+        Rol other = new Rol ( );
+
+        original.merge ( other );
+
+        assertThat ( original.getName ( ) ).isEqualTo ( "Admin" );
+        assertThat ( original.getDescription ( ) ).isEqualTo ( "Administrator role" );
+        assertThat ( original.getIdRol ( ) ).isEqualTo ( id );
+    }
+
+    @Test
+    void builder_shouldCreateRolWithCorrectValues() {
+        UUID id = UUID.randomUUID ( );
+        Rol rol = Rol.builder ( )
+                .idRol ( id )
+                .name ( "User" )
+                .description ( "Standard user" )
+                .build ( );
+
+        assertThat ( rol.getIdRol ( ) ).isEqualTo ( id );
+        assertThat ( rol.getName ( ) ).isEqualTo ( "User" );
+        assertThat ( rol.getDescription ( ) ).isEqualTo ( "Standard user" );
+    }
+
+
 }

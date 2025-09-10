@@ -9,6 +9,7 @@ import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.api.routerrest.UserRouterRest;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
+import exceptions.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -24,8 +25,10 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -128,5 +131,37 @@ class ConfigTest {
         );
     }
 
+    @Test
+    void constructor_withMessageAndErrors_shouldStoreValues() {
+        List<String> errors = List.of("Error 1", "Error 2");
+        String message = "Validation failed";
+
+        ValidationException ex = new ValidationException(message, errors);
+
+        assertThat(ex.getMessage()).isEqualTo(message);
+        assertThat(ex.getErrors()).containsExactly("Error 1", "Error 2");
+    }
+
+    @Test
+    void constructor_withErrorsOnly_shouldGenerateMessage() {
+        List <String> errors = List.of("Error A", "Error B");
+
+        ValidationException ex = new ValidationException (errors);
+
+        assertThat(ex.getMessage()).isEqualTo("Error A, Error B");
+        assertThat(ex.getErrors()).containsExactly("Error A", "Error B");
+    }
+
+    @Test
+    void constructor_withErrorsAndCause_shouldStoreCauseAndMessage() {
+        List<String> errors = List.of("Something went wrong");
+        Throwable cause = new RuntimeException("Cause");
+
+        ValidationException ex = new ValidationException(errors, cause);
+
+        assertThat(ex.getMessage()).isEqualTo("Something went wrong");
+        assertThat(ex.getErrors()).containsExactly("Something went wrong");
+        assertThat(ex.getCause()).isEqualTo(cause);
+    }
 
 }

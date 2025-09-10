@@ -3,6 +3,8 @@ package exceptions;
 import java.util.List;
 
 public class ValidationException extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
     private final List < String > errors;
 
     public ValidationException(List < String > errors) {
@@ -10,7 +12,17 @@ public class ValidationException extends RuntimeException {
         this.errors = errors;
     }
 
+    public ValidationException(String message, List < String > errors) {
+        super ( message );
+        this.errors = errors;
+    }
+
+    public ValidationException(List < String > errors, Throwable cause) {
+        super ( String.join ( ", ", errors ), cause );
+        this.errors = errors;
+    }
+
     public List < String > getErrors() {
-        return errors;
+        return List.copyOf ( errors );
     }
 }

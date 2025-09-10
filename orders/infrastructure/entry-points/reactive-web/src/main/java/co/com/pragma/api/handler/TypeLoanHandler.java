@@ -4,13 +4,14 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.TypeLoanRequestDTO;
 import co.com.pragma.api.dto.response.TypeLoanResponseDTO;
 import co.com.pragma.api.mapper.TypeLoanMapperDTO;
+import co.com.pragma.model.status.Status;
 import co.com.pragma.model.typeloan.TypeLoan;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.typeloan.TypeLoanUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import exceptions.NotFoundException;
 import exceptions.ValidationException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -19,7 +20,6 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -43,24 +43,20 @@ public class TypeLoanHandler {
                                 .created ( URI.create ( ApiPaths.TYPELOAN + savedTypeLoan.getIdTypeLoan ( ) ) )
                                 .contentType ( MediaType.APPLICATION_JSON )
                                 .bodyValue ( savedTypeLoan ) )
-                        .onErrorResume ( ValidationException.class, ex ->
-                                ServerResponse.badRequest ( )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of ( "errors", ex.getErrors ( ) ) )
-                        ).onErrorResume ( e ->
-                                ServerResponse.status ( HttpStatus.INTERNAL_SERVER_ERROR )
-                                        .contentType ( MediaType.APPLICATION_JSON )
-                                        .bodyValue ( Map.of (
-                                                "message", "Unexpected error occurred",
-                                                "details", e.getMessage ( )
-                                        ) )
-                        )
         );
     }
 
     public Mono < ServerResponse > listenUpdateTypeLoan(ServerRequest request) {
         return request.bodyToMono ( TypeLoanResponseDTO.class )
-                .map ( typeLoan -> objectMapper.convertValue ( typeLoan, TypeLoan.class ) )
+                .flatMap ( dto -> typeloanUseCase.getTypeLoanById ( dto.getIdTypeLoan ( ) )
+                        .switchIfEmpty ( Mono.error ( new NotFoundException ( "Type Loan not found" ) ) )
+                        .map ( existing -> {
+                            TypeLoan partial = objectMapper.convertValue ( dto, TypeLoan.class );
+                            if ( partial == null ) partial = new TypeLoan ( );
+                            existing.merge ( partial );
+                            return existing;
+                        } )
+                )
                 .flatMap ( typeloanUseCase::updateTypeLoan )
                 .flatMap ( savedTypeLoan -> ServerResponse.ok ( )
                         .contentType ( MediaType.APPLICATION_JSON )

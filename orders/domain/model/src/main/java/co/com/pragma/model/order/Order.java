@@ -22,4 +22,13 @@ public class Order {
     private String emailAddress;
     private UUID idStatus;
     private UUID idTypeLoan;
+
+    public void merge(Order other) {
+        if ( other.getAmount ( ) != null ) this.amount = other.getAmount ( );
+        if ( other.getDocumentId ( ) != null ) this.documentId = other.getDocumentId ( );
+        if ( other.getTermMonths ( ) != null ) this.termMonths = other.getTermMonths ( );
+        if ( other.getEmailAddress ( ) != null ) this.emailAddress = other.getEmailAddress ( );
+        if ( other.getIdStatus ( ) != null ) this.idStatus = other.getIdStatus ( );
+        if ( other.getIdTypeLoan ( ) != null ) this.idOrder = other.getIdTypeLoan ( );
+    }
 }
