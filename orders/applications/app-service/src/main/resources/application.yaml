@@ -29,7 +29,7 @@ adapters:
   r2dbc:
     host: ${DB_HOST:localhost}
     port: ${DB_PORT:5432}
-    database: ${DB_AUTH_NAME:orders}
+    database: ${DB_ORDERS_NAME:orders}
     schema: "public"
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:root}
