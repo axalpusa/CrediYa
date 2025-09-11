@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="4" author="axel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="orders"/>
+            </not>
+        </preConditions>
+        <createTable tableName="orders">
+            <column name="id_order" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="amount" type="decimal(12,2)"/>
+            <column name="term_months" type="int"/>
+            <column name="document_id" type="varchar(15)"/>
+            <column name="email_address" type="varchar(200)"/>
+            <column name="id_status" type="uuid"/>
+            <column name="id_type_loan" type="uuid"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="id_status"
+                referencedTableName="status"
+                referencedColumnNames="id_status"
+                constraintName="fk_orders_status"/>
+
+        <addForeignKeyConstraint
+                baseTableName="orders"
+                baseColumnNames="id_type_loan"
+                referencedTableName="type_loan"
+                referencedColumnNames="id_type_loan"
+                constraintName="fk_orders_type_loan"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="5-1" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM users WHERE id_user = '3b3ea7c0-b447-4c21-8780-877d8bf7da72'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="users">
+            <column name="id_user" value="3b3ea7c0-b447-4c21-8780-877d8bf7da72"/>
+            <column name="id_rol" value="beaed8b3-7090-4c58-a3d5-7578ce4f1b6a"/>
+            <column name="first_name" value="axel"/>
+            <column name="last_name" value="puertas"/>
+            <column name="email_address" value="assessor@gmail.com"/>
+            <column name="address" value="av santa rosa"/>
+            <column name="document_id" value="48295730"/>
+            <column name="birth_date" valueDate="1994-05-01"/>
+            <column name="phone_number" value="973157252"/>
+            <column name="base_salary" value="4000.00"/>
+            <column name="password" value="$2a$10$0G9HFpyDqGitgGVeqtqs9ONkQfkkDmV4BOz/qFXagmvsiOh0.N6L."/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="5-2" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM users WHERE id_user = 'c83c7876-9064-4235-be74-6b3e2d621d37'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="users">
+            <column name="id_user" value="c83c7876-9064-4235-be74-6b3e2d621d37"/>
+            <column name="id_rol" value="a71e243b-e901-4e6e-b521-85ff39ac2f3e"/>
+            <column name="first_name" value="axel"/>
+            <column name="last_name" value="puertas"/>
+            <column name="email_address" value="client@gmail.com"/>
+            <column name="address" value="av santa rosa"/>
+            <column name="document_id" value="48295730"/>
+            <column name="birth_date" valueDate="1994-05-01"/>
+            <column name="phone_number" value="973157252"/>
+            <column name="base_salary" value="3800.00"/>
+            <column name="password" value="$2a$10$nTbpjU6PaAHfDLZIfjdFv.oedy58ZfkgMCUzKjz0bDOu7/xilWnIu"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="5-3" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM users WHERE id_user = 'f23c909f-ceeb-4d68-8cdc-a57e96890e96'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="users">
+            <column name="id_user" value="f23c909f-ceeb-4d68-8cdc-a57e96890e96"/>
+            <column name="id_rol" value="facbe723-85f2-4f5a-92d6-a4a4a3a5b8ca"/>
+            <column name="first_name" value="axel"/>
+            <column name="last_name" value="puertas"/>
+            <column name="email_address" value="admin@gmail.com"/>
+            <column name="address" value="av santa rolsa"/>
+            <column name="document_id" value="48295730"/>
+            <column name="birth_date" valueDate="1994-05-01"/>
+            <column name="phone_number" value="973157252"/>
+            <column name="base_salary" value="8000.00"/>
+            <column name="password" value="$2a$10$RWF3qMrPr5gq88BeWlL3PuFk.IM19BBG4S26P9YQq1kMOAy/qTkAG"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

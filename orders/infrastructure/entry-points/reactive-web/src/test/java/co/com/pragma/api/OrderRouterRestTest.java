@@ -125,61 +125,61 @@ class OrderRouterRestTest {
     }
 
     @Test
-    @DisplayName("POST- /api/v1/order/report - éxito")
-    void reportCorrect() {
-        ReportRequestDTO req = ReportRequestDTO.builder ( )
-                .status ( UUID.randomUUID ( ) )
-                .email ( "test@example.com" )
-                .page ( 0 )
-                .size ( 10 )
-                .build ( );
+    @DisplayName("GET- /api/v1/order/report - éxito")
+    void reportCorrectGet() {
+        UUID statusId = UUID.randomUUID();
+        int page = 0;
+        int size = 10;
 
-        AuthResponseDTO mockAuthUser = AuthResponseDTO.builder ( )
-                .idRol ( RolEnum.ASSESSOR.getId ( ) )
-                .build ( );
-        lenient ( ).when ( authServiceClient.validateToken ( anyString ( ) ) ).thenReturn ( Mono.just ( mockAuthUser ) );
-        lenient ( ).when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
-                .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
-        lenient ( ).when ( transactionalAdapter.executeInTransaction ( any ( Flux.class ) ) )
-                .thenAnswer ( invocation -> invocation. < Flux < ? > >getArgument ( 0 ) );
+        AuthResponseDTO mockAuthUser = AuthResponseDTO.builder()
+                .idRol(RolEnum.ASSESSOR.getId())
+                .build();
+        lenient().when(authServiceClient.validateToken(anyString())).thenReturn(Mono.just(mockAuthUser));
+        lenient().when(transactionalAdapter.executeInTransaction(any(Mono.class)))
+                .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));
+        lenient().when(transactionalAdapter.executeInTransaction(any(Flux.class)))
+                .thenAnswer(invocation -> invocation.<Flux<?>>getArgument(0));
 
-        OrderPendingDTO order1 = OrderPendingDTO.builder ( )
-                .amount ( BigDecimal.valueOf ( 1000 ) )
-                .termMonths ( 12 )
-                .email ( "test@example.com" )
-                .typeLoan ( "Personal" )
-                .interestRate ( BigDecimal.valueOf ( 0.05 ) )
-                .statusOrder ( "Aprobado" )
-                .totalMonthlyDebtApprovedRequests ( BigDecimal.valueOf ( 100 ) )
-                .build ( );
+        OrderPendingDTO order1 = OrderPendingDTO.builder()
+                .amount(BigDecimal.valueOf(1000))
+                .termMonths(12)
+                .email("test@example.com")
+                .typeLoan("Personal")
+                .interestRate(BigDecimal.valueOf(0.05))
+                .statusOrder("Aprobado")
+                .totalMonthlyDebtApprovedRequests(BigDecimal.valueOf(100))
+                .build();
 
-        UserReportResponseDTO user = UserReportResponseDTO.builder ( )
-                .emailAddress ( "test@example.com" )
-                .firstName ( "axel" )
-                .lastName ( "Puertas" )
-                .baseSalary ( BigDecimal.valueOf ( 2000 ) )
-                .build ( );
+        UserReportResponseDTO user = UserReportResponseDTO.builder()
+                .emailAddress("test@example.com")
+                .firstName("axel")
+                .lastName("Puertas")
+                .baseSalary(BigDecimal.valueOf(2000))
+                .build();
 
-        when ( orderUseCase.findPendingOrders ( any ( UUID.class ), anyString ( ), anyInt ( ), anyInt ( ) ) )
-                .thenReturn ( Flux.just ( order1 ) );
-        when ( authServiceClient.getUserByEmailAddress ( any ( ), anyString ( ) ) )
-                .thenReturn ( Mono.just ( user ) );
+        when(orderUseCase.findPendingOrders(any(UUID.class), anyInt(), anyInt()))
+                .thenReturn(Flux.just(order1));
+        when(authServiceClient.getUserByEmailAddress(any(), anyString()))
+                .thenReturn(Mono.just(user));
 
-
-        webTestClient.post ( )
-                .uri ( ApiPaths.REPORT )
-                .header ( "Authorization", "Bearer faketoken123" )
-                .contentType ( MediaType.APPLICATION_JSON )
-                .bodyValue ( req )
-                .exchange ( )
-                .expectStatus ( ).isOk ( )
-                .expectHeader ( ).contentTypeCompatibleWith ( MediaType.APPLICATION_JSON )
-                .expectBody ( )
-                .jsonPath ( "$[0].email" ).isEqualTo ( "test@example.com" )
-                .jsonPath ( "$[0].name" ).isEqualTo ( "axel Puertas" ) // coincide con tu handler
-                .jsonPath ( "$[0].amount" ).isEqualTo ( 1000 )
-                .jsonPath ( "$[0].statusOrder" ).isEqualTo ( "Aprobado" )
-                .jsonPath ( "$[0].totalMonthlyDebtApprovedRequests" ).isEqualTo ( 100 );
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(ApiPaths.REPORT)
+                        .queryParam("status", statusId)
+                        .queryParam("page", page)
+                        .queryParam("size", size)
+                        .build()
+                )
+                .header("Authorization", "Bearer faketoken123")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$[0].email").isEqualTo("test@example.com")
+                .jsonPath("$[0].name").isEqualTo("axel Puertas")
+                .jsonPath("$[0].amount").isEqualTo(1000)
+                .jsonPath("$[0].statusOrder").isEqualTo("Aprobado")
+                .jsonPath("$[0].totalMonthlyDebtApprovedRequests").isEqualTo(100);
     }
 
 

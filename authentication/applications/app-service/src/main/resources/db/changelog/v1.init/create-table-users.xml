@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="3" author="axel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="users"/>
+            </not>
+        </preConditions>
+        <createTable tableName="users">
+            <column name="id_user" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="id_rol" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_name" type="varchar(255)"/>
+            <column name="last_name" type="varchar(255)"/>
+            <column name="email_address" type="varchar(255)">
+                <constraints unique="true"/>
+            </column>
+            <column name="address" type="varchar(255)"/>
+            <column name="document_id" type="varchar(255)"/>
+            <column name="password" type="varchar(255)"/>
+            <column name="birth_date" type="date"/>
+            <column name="phone_number" type="varchar(255)"/>
+            <column name="base_salary" type="decimal(12,2)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="users"
+                baseColumnNames="id_rol"
+                constraintName="fk_users_rol"
+                referencedTableName="rol"
+                referencedColumnNames="id_rol"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -5,6 +5,12 @@ spring:
     name: "Orders"
   devtools:
     add-properties: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    url: jdbc:postgresql://db_orders:5432/orders   #db_orders - localhost
+    user: postgres
+    password: root
   h2:
     console:
       enabled: true
@@ -27,15 +33,12 @@ springdoc:
     path: /api/doc/swagger-ui.html
 adapters:
   r2dbc:
-    host: ${DB_HOST:localhost}
-    port: ${DB_PORT:5432}
-    database: ${DB_ORDERS_NAME:orders}
+    host: db_orders                #db_orders - localhost
+    port: 5432
+    database: orders
     schema: "public"
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:root}
-liquibase:
-  change-log: classpath:db/changelog/db.changelog-master.yaml
-  enabled: true
+    username: postgres
+    password: root
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8091"
 logging:

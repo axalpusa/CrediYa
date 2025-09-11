@@ -268,19 +268,18 @@ public class OrderTest {
     @Test
     void findPendingOrders_shouldReturnPendingOrders() {
         UUID filterStatus = UUID.randomUUID ( );
-        String filterEmail = "test@example.com";
         int page = 0;
         int size = 10;
 
         OrderPendingDTO pendingDTO = new OrderPendingDTO ( );
-        when ( orderRepository.findPendingOrders ( filterStatus, filterEmail, page, size ) )
+        when ( orderRepository.findPendingOrders ( filterStatus, page, size ) )
                 .thenReturn ( Flux.just ( pendingDTO ) );
 
-        StepVerifier.create ( orderUseCase.findPendingOrders ( filterStatus, filterEmail, page, size ) )
+        StepVerifier.create ( orderUseCase.findPendingOrders ( filterStatus, page, size ) )
                 .expectNext ( pendingDTO )
                 .verifyComplete ( );
 
-        verify ( orderRepository ).findPendingOrders ( filterStatus, filterEmail, page, size );
+        verify ( orderRepository ).findPendingOrders ( filterStatus, page, size );
     }
 
     @Test

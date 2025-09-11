@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="3" author="axel">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="type_loan"/>
+            </not>
+        </preConditions>
+        <createTable tableName="type_loan">
+            <column name="id_type_loan" type="uuid" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+            <column name="minimum_amount" type="decimal(12,2)"/>
+            <column name="maximum_amount" type="decimal(12,2)"/>
+            <column name="interest_rate" type="decimal(12,2)"/>
+            <column name="automatic_validation" type="boolean"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
+

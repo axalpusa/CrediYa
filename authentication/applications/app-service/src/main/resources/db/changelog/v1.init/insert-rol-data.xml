@@ -1,0 +1,49 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.21.xsd">
+
+    <!-- Insert ADMIN -->
+    <changeSet id="4-1" author="axel" failOnError="false">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM rol WHERE id_rol = 'facbe723-85f2-4f5a-92d6-a4a4a3a5b8ca'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="rol">
+            <column name="id_rol" value="facbe723-85f2-4f5a-92d6-a4a4a3a5b8ca"/>
+            <column name="name" value="ADMIN"/>
+            <column name="description" value="ADMIN"/>
+        </insert>
+    </changeSet>
+
+    <!-- Insert CLIENT -->
+    <changeSet id="4-2" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM rol WHERE id_rol = 'a71e243b-e901-4e6e-b521-85ff39ac2f3e'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="rol">
+            <column name="id_rol" value="a71e243b-e901-4e6e-b521-85ff39ac2f3e"/>
+            <column name="name" value="CLIENT"/>
+            <column name="description" value="CLIENT"/>
+        </insert>
+    </changeSet>
+
+    <!-- Insert ASSESSOR -->
+    <changeSet id="4-3" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM rol WHERE id_rol = 'beaed8b3-7090-4c58-a3d5-7578ce4f1b6a'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="rol">
+            <column name="id_rol" value="beaed8b3-7090-4c58-a3d5-7578ce4f1b6a"/>
+            <column name="name" value="ASSESSOR"/>
+            <column name="description" value="ASSESSOR"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

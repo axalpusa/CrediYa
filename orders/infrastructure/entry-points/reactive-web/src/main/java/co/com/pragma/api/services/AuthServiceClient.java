@@ -13,7 +13,8 @@ public class AuthServiceClient {
     private final WebClient webClient;
 
     public AuthServiceClient(WebClient.Builder builder) {
-        this.webClient = builder.baseUrl ( "http://localhost:8090" ).build ( );
+        // this.webClient = builder.baseUrl ( "http://localhost:8090" ).build ( );
+        this.webClient = builder.baseUrl ( "http://authentication:8090" ).build ( );
     }
 
     public Mono < AuthResponseDTO > validateToken(String token) {

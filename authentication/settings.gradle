@@ -12,7 +12,7 @@ buildCache {
     }
 }
 
-rootProject.name = 'pragma'
+rootProject.name = 'authentication'
 
 include ':app-service'
 include ':model'

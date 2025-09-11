@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="5.1" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM status WHERE id_status = 'f8820448-a6ef-4d0d-beb8-130a71dc3fda'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="status">
+            <column name="id_status" value="f8820448-a6ef-4d0d-beb8-130a71dc3fda"/>
+            <column name="name" value="PENDIENTE"/>
+            <column name="description" value="Pendiente de revisión"/>
+        </insert>
+    </changeSet>
+    <changeSet id="5.2" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM status WHERE id_status = 'f7820448-a6ef-4d0d-beb8-130a71dc3fda'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="status">
+            <column name="id_status" value="f7820448-a6ef-4d0d-beb8-130a71dc3fda"/>
+            <column name="name" value="EN REVISION"/>
+            <column name="description" value="En revision"/>
+        </insert>
+    </changeSet>
+    <changeSet id="5.3" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM status WHERE id_status = '1603cbb9-f4ad-4112-9804-c3d4c04a48f5'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="status">
+            <column name="id_status" value="1603cbb9-f4ad-4112-9804-c3d4c04a48f5"/>
+            <column name="name" value="APROBADA"/>
+            <column name="description" value="APROBADA"/>
+        </insert>
+    </changeSet>
+    <changeSet id="5.4" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM type_loan WHERE id_type_loan = 'f7820448-a6ef-4d0d-beb8-130a71dc3fd4'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="type_loan">
+            <column name="id_type_loan" value="f7820448-a6ef-4d0d-beb8-130a71dc3fd4"/>
+            <column name="name" value="Prestamo 1"/>
+            <column name="minimum_amount" valueNumeric="0"/>
+            <column name="maximum_amount" valueNumeric="5000"/>
+            <column name="interest_rate" valueNumeric="0.45"/>
+            <column name="automatic_validation" valueBoolean="true"/>
+        </insert>
+    </changeSet>
+    <changeSet id="5.5" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM type_loan WHERE id_type_loan = 'f8820448-a6ef-4d0d-beb8-130a71dc3fd0'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="type_loan">
+            <column name="id_type_loan" value="f8820448-a6ef-4d0d-beb8-130a71dc3fd0"/>
+            <column name="name" value="Prestamo 2"/>
+            <column name="minimum_amount" valueNumeric="3000"/>
+            <column name="maximum_amount" valueNumeric="10000"/>
+            <column name="interest_rate" valueNumeric="0.60"/>
+            <column name="automatic_validation" valueBoolean="false"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>
