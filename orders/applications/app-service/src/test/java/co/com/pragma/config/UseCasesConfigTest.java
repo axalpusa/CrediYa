@@ -1,5 +1,6 @@
 package co.com.pragma.config;
 
+import co.com.pragma.model.notification.gateways.NotificationRepository;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.status.gateways.StatusRepository;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
@@ -43,6 +44,10 @@ public class UseCasesConfigTest {
         @Bean
         public StatusRepository statusRepository() {
             return Mockito.mock ( StatusRepository.class );
+        }
+        @Bean
+        public NotificationRepository notificationRepository() {
+            return Mockito.mock ( NotificationRepository.class );
         }
     }
 }

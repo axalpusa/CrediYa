@@ -2,20 +2,19 @@ package co.com.pragma.api;
 
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
-import co.com.pragma.api.dto.request.ReportRequestDTO;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.dto.response.UserReportResponseDTO;
-import co.com.pragma.api.enums.RolEnum;
-import co.com.pragma.api.enums.TypeLoanEnum;
 import co.com.pragma.api.handler.OrderHandler;
 import co.com.pragma.api.mapper.OrderMapperDTO;
 import co.com.pragma.api.routerrest.OrderRouterRest;
 import co.com.pragma.api.services.AuthServiceClient;
-import co.com.pragma.model.dto.OrderPendingDTO;
+import co.com.pragma.model.order.OrderPending;
 import co.com.pragma.model.order.Order;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.order.OrderUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import enums.RolEnum;
+import enums.TypeLoanEnum;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -140,7 +139,7 @@ class OrderRouterRestTest {
         lenient().when(transactionalAdapter.executeInTransaction(any(Flux.class)))
                 .thenAnswer(invocation -> invocation.<Flux<?>>getArgument(0));
 
-        OrderPendingDTO order1 = OrderPendingDTO.builder()
+        OrderPending order1 = OrderPending.builder()
                 .amount(BigDecimal.valueOf(1000))
                 .termMonths(12)
                 .email("test@example.com")

@@ -4,7 +4,6 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.config.GlobalErrorHandler;
 import co.com.pragma.api.dto.request.TypeLoanRequestDTO;
 import co.com.pragma.api.dto.response.TypeLoanResponseDTO;
-import co.com.pragma.api.enums.TypeLoanEnum;
 import co.com.pragma.api.handler.TypeLoanHandler;
 import co.com.pragma.api.mapper.TypeLoanMapperDTO;
 import co.com.pragma.api.routerrest.TypeLoanRouterRest;

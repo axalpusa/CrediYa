@@ -1,18 +1,14 @@
 package co.com.pragma.r2dbc.adapter;
 
-import co.com.pragma.model.dto.OrderPendingDTO;
+import co.com.pragma.model.order.OrderPending;
 import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.r2dbc.adapter.interfaces.OrderReactiveRepository;
 import co.com.pragma.r2dbc.entities.OrderEntity;
 import co.com.pragma.r2dbc.helper.ReactiveAdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -58,7 +54,7 @@ public class OrderReactiveRepositoryAdapter extends ReactiveAdapterOperations <
     }
 
     @Override
-    public Flux<OrderPendingDTO> findPendingOrders(UUID filterStatus, int page, int size) {
+    public Flux<OrderPending> findPendingOrders(UUID filterStatus, int page, int size) {
 
         String sql = """
         SELECT o.amount, o.term_months, o.email_address,
@@ -90,7 +86,7 @@ public class OrderReactiveRepositoryAdapter extends ReactiveAdapterOperations <
         }
 
         return spec
-                .map((row, metadata) -> OrderPendingDTO.builder()
+                .map((row, metadata) -> OrderPending.builder()
                         .amount(row.get("amount", BigDecimal.class))
                         .termMonths(row.get("term_months", Integer.class))
                         .email(row.get("email_address", String.class))
