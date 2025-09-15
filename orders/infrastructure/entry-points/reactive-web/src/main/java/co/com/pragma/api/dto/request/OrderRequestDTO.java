@@ -22,4 +22,5 @@ public class OrderRequestDTO {
     String emailAddress;
     UUID idTypeLoan;
     UUID idStatus;
+
 }

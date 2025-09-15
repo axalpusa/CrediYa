@@ -5,9 +5,6 @@ import co.com.pragma.api.config.GlobalErrorHandler;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.dto.response.OrderResponseDTO;
-import co.com.pragma.api.enums.RolEnum;
-import co.com.pragma.api.enums.StatusEnum;
-import co.com.pragma.api.enums.TypeLoanEnum;
 import co.com.pragma.api.handler.OrderHandler;
 import co.com.pragma.api.mapper.OrderMapperDTO;
 import co.com.pragma.api.routerrest.OrderRouterRest;
@@ -16,7 +13,9 @@ import co.com.pragma.model.order.Order;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.order.OrderUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.ValidationException;
+import enums.RolEnum;
+import enums.StatusEnum;
+import enums.TypeLoanEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,16 +24,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.server.HandlerStrategies;
-import org.springframework.web.reactive.function.server.ServerRequest;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,22 +50,23 @@ public class RouterOrderHandlerTest {
 
     @BeforeEach
     void setup() {
-        orderUseCase = mock ( OrderUseCase.class );
-        orderMapper = mock ( OrderMapperDTO.class );
-        objectMapper = mock ( ObjectMapper.class );
-        transactionalAdapter = mock ( TransactionalAdapter.class );
-        authServiceClient = mock ( AuthServiceClient.class );
-        OrderHandler orderHandler = new OrderHandler ( orderUseCase, objectMapper, orderMapper, authServiceClient, transactionalAdapter );
-        OrderRouterRest orderRouterRest = new OrderRouterRest ( );
-        objectMapper = new ObjectMapper ( );
-        GlobalErrorHandler globalErrorHandler = new GlobalErrorHandler ( objectMapper );
+        orderUseCase = mock(OrderUseCase.class);
+        orderMapper = mock(OrderMapperDTO.class);
+        objectMapper = mock(ObjectMapper.class); // el mock que vamos a usar
+        transactionalAdapter = mock(TransactionalAdapter.class);
+        authServiceClient = mock(AuthServiceClient.class);
+
+        OrderHandler orderHandler = new OrderHandler(orderUseCase, objectMapper, orderMapper, authServiceClient, transactionalAdapter);
+
+        OrderRouterRest orderRouterRest = new OrderRouterRest();
+        GlobalErrorHandler globalErrorHandler = new GlobalErrorHandler(objectMapper); // usa el mock
 
         webTestClient = WebTestClient
-                .bindToRouterFunction ( orderRouterRest.orderRoutes ( orderHandler ) )
-                .handlerStrategies ( HandlerStrategies.builder ( )
-                        .exceptionHandler ( globalErrorHandler )
-                        .build ( ) )
-                .build ( );
+                .bindToRouterFunction(orderRouterRest.orderRoutes(orderHandler))
+                .handlerStrategies(HandlerStrategies.builder()
+                        .exceptionHandler(globalErrorHandler)
+                        .build())
+                .build();
     }
 
     private OrderRequestDTO buildRequest() {
@@ -174,44 +171,67 @@ public class RouterOrderHandlerTest {
     }
 
     @Test
-    void testUpdateOrder() {
-        UUID uuid = UUID.randomUUID ( );
-        OrderResponseDTO dto = new OrderResponseDTO ( );
-        dto.setIdOrder ( uuid );
-        dto.setEmailAddress ( "axalpusa@gmail.com" );
+    void testUpdateOrderHandler() {
+        UUID uuid = UUID.randomUUID();
 
-        Order existingOrder = new Order ( );
-        existingOrder.setIdOrder ( uuid );
-        existingOrder.setEmailAddress ( "axalpusa1125@gmail.com" );
-        existingOrder.setTermMonths ( 12 );
-        existingOrder.setAmount ( new BigDecimal ( "1000" ) );
-        existingOrder.setDocumentId ( "48295730" );
-        existingOrder.setIdTypeLoan ( TypeLoanEnum.TYPE2.getId ( ) );
-        existingOrder.setIdStatus ( StatusEnum.PENDENT.getId ( ) );
+        OrderResponseDTO dto = new OrderResponseDTO();
+        dto.setIdOrder(uuid);
+        dto.setIdStatus(StatusEnum.APPROVED.getId());
 
-        Order updatedOrder = new Order ( );
-        updatedOrder.setIdOrder ( uuid );
-        updatedOrder.setEmailAddress ( "axalpusa@gmail.com" );
-        updatedOrder.setTermMonths ( 12 );
-        updatedOrder.setAmount ( new BigDecimal ( "1000" ) );
-        updatedOrder.setDocumentId ( "48295730" );
-        updatedOrder.setIdTypeLoan ( TypeLoanEnum.TYPE2.getId ( ) );
-        updatedOrder.setIdStatus ( StatusEnum.PENDENT.getId ( ) );
+        Order existingOrder = new Order();
+        existingOrder.setIdOrder(uuid);
+        existingOrder.setEmailAddress("axalpusa1125@gmail.com");
+        existingOrder.setTermMonths(12);
+        existingOrder.setAmount(new BigDecimal("1000"));
+        existingOrder.setDocumentId("48295730");
+        existingOrder.setIdTypeLoan(TypeLoanEnum.TYPE2.getId());
+        existingOrder.setIdStatus(StatusEnum.PENDENT.getId());
 
-        when ( orderUseCase.getOrderById ( uuid ) ).thenReturn ( Mono.just ( existingOrder ) );
-        when ( orderUseCase.updateOrder ( any ( Order.class ) ) ).thenReturn ( Mono.just ( updatedOrder ) );
+        Order updatedOrder = new Order();
+        updatedOrder.setIdOrder(uuid);
+        updatedOrder.setEmailAddress(existingOrder.getEmailAddress());
+        updatedOrder.setTermMonths(existingOrder.getTermMonths());
+        updatedOrder.setAmount(existingOrder.getAmount());
+        updatedOrder.setDocumentId(existingOrder.getDocumentId());
+        updatedOrder.setIdTypeLoan(existingOrder.getIdTypeLoan());
+        updatedOrder.setIdStatus(dto.getIdStatus());
 
-        webTestClient.put ( )
-                .uri ( "/api/v1/order" )
-                .contentType ( MediaType.APPLICATION_JSON )
-                .bodyValue ( dto )
-                .exchange ( )
-                .expectStatus ( ).isOk ( )
-                .expectBody ( )
-                .returnResult ( )
-                .getResponseBody ( );
+        AuthResponseDTO mockAuthUser = AuthResponseDTO.builder()
+                .idRol(RolEnum.ASSESSOR.getId())
+                .build();
 
+        when(orderUseCase.getOrderById(uuid)).thenReturn(Mono.just(existingOrder));
+        when(orderUseCase.updateOrderAndNotify(any(Order.class))).thenReturn(Mono.just(updatedOrder));
+
+        when(transactionalAdapter.executeInTransaction(any(Mono.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        lenient().when(authServiceClient.validateToken(anyString()))
+                .thenReturn(Mono.just(mockAuthUser));
+
+        lenient().when(objectMapper.convertValue(any(OrderResponseDTO.class), eq(Order.class)))
+                .thenAnswer(invocation -> {
+                    OrderResponseDTO dtoArg = invocation.getArgument(0);
+                    Order order = new Order();
+                    if (dtoArg != null) {
+                        order.setIdOrder(dtoArg.getIdOrder());
+                        order.setIdStatus(dtoArg.getIdStatus());
+                    }
+                    return order;
+                });
+
+        webTestClient.put()
+                .uri("/api/v1/order")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer faketoken123")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.idStatus").isEqualTo(dto.getIdStatus().toString())
+                .jsonPath("$.emailAddress").isEqualTo("axalpusa1125@gmail.com"); // se mantiene
     }
+
 
     @Test
     void testDeleteOrderSuccess() {

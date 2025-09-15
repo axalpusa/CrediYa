@@ -1,6 +1,7 @@
 package co.com.pragma.usecase.order;
 
-import co.com.pragma.model.dto.OrderPendingDTO;
+import co.com.pragma.model.notification.gateways.NotificationRepository;
+import co.com.pragma.model.order.OrderPending;
 import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.typeloan.TypeLoan;
@@ -25,12 +26,13 @@ public class OrderTest {
     private OrderRepository orderRepository;
     private TypeLoanRepository typeLoanRepository;
     private OrderUseCase orderUseCase;
+    private NotificationRepository notificationRepository;
 
     @BeforeEach
     void setUp() {
         orderRepository = Mockito.mock ( OrderRepository.class );
         typeLoanRepository = Mockito.mock ( TypeLoanRepository.class );
-        orderUseCase = new OrderUseCase ( orderRepository, typeLoanRepository );
+        orderUseCase = new OrderUseCase ( orderRepository, typeLoanRepository ,notificationRepository);
     }
 
     @Test
@@ -271,7 +273,7 @@ public class OrderTest {
         int page = 0;
         int size = 10;
 
-        OrderPendingDTO pendingDTO = new OrderPendingDTO ( );
+        OrderPending pendingDTO = new OrderPending( );
         when ( orderRepository.findPendingOrders ( filterStatus, page, size ) )
                 .thenReturn ( Flux.just ( pendingDTO ) );
 

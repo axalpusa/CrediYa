@@ -3,6 +3,7 @@ package co.com.pragma.api.services;
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.dto.response.UserReportResponseDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -12,9 +13,11 @@ public class AuthServiceClient {
 
     private final WebClient webClient;
 
-    public AuthServiceClient(WebClient.Builder builder) {
-        // this.webClient = builder.baseUrl ( "http://localhost:8090" ).build ( );
-        this.webClient = builder.baseUrl ( "http://authentication:8090" ).build ( );
+    public AuthServiceClient(WebClient.Builder builder,
+                             @Value("${auth.service.url}") String authServiceUrl) {
+        this.webClient = builder
+                .baseUrl(authServiceUrl)
+                .build();
     }
 
     public Mono < AuthResponseDTO > validateToken(String token) {

@@ -7,10 +7,10 @@ spring:
     add-properties: false
   liquibase:
     enabled: true
-    change-log: classpath:db/changelog/db.changelog-master.xml
-    url: jdbc:postgresql://db_orders:5432/orders   #db_orders - localhost
-    user: postgres
-    password: root
+    change-log: "classpath:db/changelog/db.changelog-master.xml"
+    url: "jdbc:postgresql://db_orders:5432/orders"
+    user: "postgres"
+    password: "root"
   h2:
     console:
       enabled: true
@@ -28,21 +28,28 @@ management:
         enabled: true
 springdoc:
   api-docs:
-    path: /api/doc/api-docs
+    path: "/api/doc/api-docs"
   swagger-ui:
-    path: /api/doc/swagger-ui.html
+    path: "/api/doc/swagger-ui.html"
 adapters:
   r2dbc:
-    host: db_orders                #db_orders - localhost
+    host: "db_orders"
     port: 5432
-    database: orders
+    database: "orders"
     schema: "public"
-    username: postgres
-    password: root
+    username: "postgres"
+    password: "root"
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8091"
 logging:
   level:
-    root: INFO
+    root: "INFO"
   file:
-    name: logs/crediya_orders.log
+    name: "logs/crediya_orders.log"
+auth:
+  service:
+    url: "${AUTH_SERVICE_URL:http://localhost:8090}"
+adapter:
+  sqs:
+    region: ${AWS_REGION}
+    queueUrl: ${SQS_ENDPOINT}

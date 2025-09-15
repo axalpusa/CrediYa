@@ -6,8 +6,6 @@ import co.com.pragma.api.dto.request.TypeLoanRequestDTO;
 import co.com.pragma.api.dto.response.OrderResponseDTO;
 import co.com.pragma.api.dto.response.StatusResponseDTO;
 import co.com.pragma.api.dto.response.TypeLoanResponseDTO;
-import co.com.pragma.api.enums.StatusEnum;
-import co.com.pragma.api.enums.TypeLoanEnum;
 import co.com.pragma.api.mapper.OrderMapperDTO;
 import co.com.pragma.api.mapper.OrderMapperDTOImpl;
 import co.com.pragma.api.mapper.StatusMapperDTO;
@@ -17,10 +15,11 @@ import co.com.pragma.api.mapper.TypeLoanMapperDTOImpl;
 import co.com.pragma.model.order.Order;
 import co.com.pragma.model.status.Status;
 import co.com.pragma.model.typeloan.TypeLoan;
+import enums.StatusEnum;
+import enums.TypeLoanEnum;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
