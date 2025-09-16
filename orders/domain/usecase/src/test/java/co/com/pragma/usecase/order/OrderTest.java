@@ -152,6 +152,7 @@ public class OrderTest {
         TypeLoan typeLoan = new TypeLoan ( );
         typeLoan.setMinimumAmount ( BigDecimal.valueOf ( 1000 ) );
         typeLoan.setMaximumAmount ( BigDecimal.valueOf ( 10000 ) );
+        typeLoan.setAutomaticValidation ( false );
 
         when ( typeLoanRepository.findById ( idTypeLoan ) ).thenReturn ( Mono.just ( typeLoan ) );
         when ( orderRepository.save ( order ) ).thenReturn ( Mono.just ( order ) );
@@ -272,18 +273,19 @@ public class OrderTest {
     @Test
     void findPendingOrders_shouldReturnPendingOrders() {
         UUID filterStatus = UUID.randomUUID ( );
+        String filterEmail = "axalpusa1125@gmail.com";
         int page = 0;
         int size = 10;
 
         OrderPending pendingDTO = new OrderPending( );
-        when ( orderRepository.findPendingOrders ( filterStatus, page, size ) )
+        when ( orderRepository.findPendingOrders ( filterStatus, filterEmail, page, size ) )
                 .thenReturn ( Flux.just ( pendingDTO ) );
 
-        StepVerifier.create ( orderUseCase.findPendingOrders ( filterStatus, page, size ) )
+        StepVerifier.create ( orderUseCase.findPendingOrders ( filterStatus, filterEmail, page, size ) )
                 .expectNext ( pendingDTO )
                 .verifyComplete ( );
 
-        verify ( orderRepository ).findPendingOrders ( filterStatus, page, size );
+        verify ( orderRepository ).findPendingOrders ( filterStatus,filterEmail, page, size );
     }
 
     @Test
@@ -345,5 +347,37 @@ public class OrderTest {
         verify(notificationRepository).sendOrderStatus(order);
     }
 
+    @Test
+    void saveOrder_shouldSendToCapacityLambda_whenAutomaticValidationTrue() {
+        UUID typeLoanId = UUID.randomUUID();
+        Order order = Order.builder()
+                .idTypeLoan(typeLoanId)
+                .amount(BigDecimal.valueOf(5000))
+                .documentId("12345678")
+                .emailAddress("test@example.com")
+                .termMonths(12)
+                .build();
+
+        TypeLoan typeLoan = new TypeLoan();
+        typeLoan.setMinimumAmount(BigDecimal.valueOf(1000));
+        typeLoan.setMaximumAmount(BigDecimal.valueOf(10000));
+        typeLoan.setAutomaticValidation(true);
+
+        when(typeLoanRepository.findById(typeLoanId)).thenReturn(Mono.just(typeLoan));
+        when(orderRepository.save(order)).thenReturn(Mono.just(order));
+        when(notificationRepository.sendCalculateCapacity(Mockito.any())).thenReturn(Mono.empty());
+        when(orderRepository.findPendingOrders(
+                Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
+                .thenReturn(Flux.empty());
+
+        StepVerifier.create(orderUseCase.saveOrder(order))
+                .expectNextMatches(saved ->
+                        saved.getAmount().equals(order.getAmount()) &&
+                                saved.getIdTypeLoan().equals(order.getIdTypeLoan()))
+                .verifyComplete();
+
+        verify(orderRepository).save(order);
+        verify(notificationRepository).sendCalculateCapacity(Mockito.any());
+    }
 
 }

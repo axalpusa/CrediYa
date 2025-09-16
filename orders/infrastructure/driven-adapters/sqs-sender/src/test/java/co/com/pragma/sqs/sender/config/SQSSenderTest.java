@@ -1,5 +1,6 @@
 package co.com.pragma.sqs.sender.config;
 
+import co.com.pragma.model.order.CalculateCapacity;
 import co.com.pragma.model.order.Order;
 import co.com.pragma.sqs.sender.SQSSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,9 +35,9 @@ public class SQSSenderTest {
 
     @BeforeEach
     void setUp() {
-        properties = new SQSSenderProperties(
-                "http://localhost:4566/000000000000/test-queue",
-                "us-east-2"
+        properties = new SQSSenderProperties ( "us-east-2",
+                "http://localhost:4566/000000000000/calculate-queue",
+                "http://localhost:4566/000000000000/status-queue"
         );
 
         sqsClient = mock ( SqsAsyncClient.class );
@@ -52,7 +53,7 @@ public class SQSSenderTest {
         when ( sqsClient.sendMessage ( any ( SendMessageRequest.class ) ) )
                 .thenReturn ( CompletableFuture.completedFuture ( response ) );
 
-        StepVerifier.create ( sqsSender.send ( "test-message" ) )
+        StepVerifier.create ( sqsSender.sendStatus ( "test-message" ) )
                 .expectNext ( expectedMessageId )
                 .verifyComplete ( );
 
@@ -60,7 +61,7 @@ public class SQSSenderTest {
         verify ( sqsClient ).sendMessage ( captor.capture ( ) );
 
         SendMessageRequest request = captor.getValue ( );
-        assertThat ( request.queueUrl ( ) ).isEqualTo ( properties.queueUrl ( ) );
+        assertThat ( request.queueUrl ( ) ).isEqualTo ( properties.orderStatusQueueUrl ( ) );
         assertThat ( request.messageBody ( ) ).isEqualTo ( "test-message" );
     }
 
@@ -97,7 +98,7 @@ public class SQSSenderTest {
                 .expectError ( IllegalArgumentException.class )
                 .verify ( );
 
-        verify(sqsClient, never()).sendMessage(any(SendMessageRequest.class));
+        verify ( sqsClient, never ( ) ).sendMessage ( any ( SendMessageRequest.class ) );
     }
 
     @Test
@@ -117,7 +118,7 @@ public class SQSSenderTest {
                 .expectError ( RuntimeException.class )
                 .verify ( );
 
-        verify(sqsClient, never()).sendMessage(any(SendMessageRequest.class));
+        verify ( sqsClient, never ( ) ).sendMessage ( any ( SendMessageRequest.class ) );
 
     }
 
@@ -125,7 +126,7 @@ public class SQSSenderTest {
     void sendOrderStatus_shouldSendMessage() {
         SqsAsyncClient client = mock ( SqsAsyncClient.class );
         ObjectMapper mapper = new ObjectMapper ( );
-        SQSSenderProperties props = new SQSSenderProperties ( "us-east-2", "https://sqs-url" );
+        SQSSenderProperties props = new SQSSenderProperties ( "us-east-2", "https://sqs-calculate-url", "https://sqs-status-url" );
 
         SQSSender sender = new SQSSender ( props, client, mapper );
         Order order = new Order ( );
@@ -144,5 +145,60 @@ public class SQSSenderTest {
         StepVerifier.create ( sender.sendOrderStatus ( order ) )
                 .verifyComplete ( );
     }
+    @Test
+    void sendCapacity_shouldReturnMessageId_whenSqsRespondsSuccessfully() {
+        String expectedMessageId = "abc123";
+        SendMessageResponse response = SendMessageResponse.builder().messageId(expectedMessageId).build();
+        when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+                .thenReturn(CompletableFuture.completedFuture(response));
+
+        StepVerifier.create(sqsSender.sendCapacity("calculate-message"))
+                .expectNext(expectedMessageId)
+                .verifyComplete();
+
+        ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
+        verify(sqsClient).sendMessage(captor.capture());
+
+        SendMessageRequest request = captor.getValue();
+        assertThat(request.queueUrl()).isEqualTo(properties.calculateCapacityQueueUrl());
+        assertThat(request.messageBody()).isEqualTo("calculate-message");
+    }
+
+    @Test
+    void sendCalculateCapacity_shouldCompleteSuccessfully() throws Exception {
+        CalculateCapacity dto = new CalculateCapacity();
+        Order order = new Order();
+        order.setIdOrder(UUID.randomUUID());
+        order.setEmailAddress("test@mail.com");
+        dto.setOrder(order);
+
+        SendMessageResponse response = SendMessageResponse.builder().messageId("msg123").build();
+        when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+                .thenReturn(CompletableFuture.completedFuture(response));
+
+        StepVerifier.create(sqsSender.sendCalculateCapacity(dto))
+                .verifyComplete();
+
+        ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
+        verify(sqsClient).sendMessage(captor.capture());
+        assertThat(captor.getValue().queueUrl()).isEqualTo(properties.calculateCapacityQueueUrl());
+    }
+
+    @Test
+    void sendCalculateCapacity_shouldError_whenJsonFails() throws Exception {
+        ObjectMapper brokenMapper = mock(ObjectMapper.class);
+        when(brokenMapper.writeValueAsString(any())).thenThrow(new RuntimeException("JSON error"));
+
+        SQSSender brokenSender = new SQSSender(properties, sqsClient, brokenMapper);
+        CalculateCapacity dto = new CalculateCapacity();
+        dto.setOrder(new Order());
+
+        StepVerifier.create(brokenSender.sendCalculateCapacity(dto))
+                .expectError(RuntimeException.class)
+                .verify();
+
+        verify(sqsClient, never()).sendMessage(any(SendMessageRequest.class));
+    }
+
 
 }

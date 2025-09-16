@@ -50,7 +50,7 @@ public class OrderHandler {
                                         ) ) )
                                         .flatMap ( dto -> {
                                             Order order = orderMapper.toModel ( dto );
-                                            order.setIdStatus ( StatusEnum.REVISION.getId ( ) );
+                                           // order.setIdStatus ( StatusEnum.REVISION.getId ( ) );
                                             return orderUseCase.saveOrder ( order );
                                         } )
                                         .flatMap ( savedOrder ->
@@ -67,6 +67,9 @@ public class OrderHandler {
                 .filter ( s -> !s.isBlank ( ) )
                 .map ( UUID::fromString )
                 .orElse ( null );
+        String filterEmail = request.queryParam ( "email" )
+                .filter ( s -> !s.isBlank ( ) )
+                .orElse ( null );
         int page = request.queryParam ( "page" )
                 .map ( Integer::parseInt )
                 .orElse ( 0 );
@@ -75,7 +78,7 @@ public class OrderHandler {
                 .orElse ( 10 );
         return validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
                 .flatMap ( authUser ->
-                        orderUseCase.findPendingOrders ( filterStatus, page, size )
+                        orderUseCase.findPendingOrders ( filterStatus, filterEmail, page, size )
                                 .flatMap ( order ->
                                         authServiceClient.getUserByEmailAddress ( authUser.getToken ( ), order.getEmail ( ) )
                                                 .onErrorResume ( WebClientResponseException.NotFound.class, ex -> Mono.empty ( ) )

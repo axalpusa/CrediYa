@@ -127,6 +127,7 @@ class OrderRouterRestTest {
     @DisplayName("GET- /api/v1/order/report - éxito")
     void reportCorrectGet() {
         UUID statusId = UUID.randomUUID();
+        String email = "axalpusa1125@gmail.com";
         int page = 0;
         int size = 10;
 
@@ -156,7 +157,7 @@ class OrderRouterRestTest {
                 .baseSalary(BigDecimal.valueOf(2000))
                 .build();
 
-        when(orderUseCase.findPendingOrders(any(UUID.class), anyInt(), anyInt()))
+        when(orderUseCase.findPendingOrders(any(UUID.class),anyString (), anyInt(), anyInt()))
                 .thenReturn(Flux.just(order1));
         when(authServiceClient.getUserByEmailAddress(any(), anyString()))
                 .thenReturn(Mono.just(user));
@@ -165,6 +166,7 @@ class OrderRouterRestTest {
                 .uri(uriBuilder -> uriBuilder
                         .path(ApiPaths.REPORT)
                         .queryParam("status", statusId)
+                        .queryParam("email", email)
                         .queryParam("page", page)
                         .queryParam("size", size)
                         .build()

@@ -1,7 +1,7 @@
 package co.com.pragma.model.order.gateways;
 
-import co.com.pragma.model.order.OrderPending;
 import co.com.pragma.model.order.Order;
+import co.com.pragma.model.order.OrderPending;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -17,5 +17,5 @@ public interface OrderRepository {
 
     Mono < Void > deleteById(UUID id);
 
-    Flux <OrderPending> findPendingOrders(UUID filterStatus, int page, int size);
+    Flux < OrderPending > findPendingOrders(UUID filterStatus, String filterEmail, int page, int size);
 }
