@@ -2,9 +2,9 @@ package co.com.pragma.api.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.NotFoundException;
-import exceptions.UnauthorizedException;
-import exceptions.ValidationException;
+import exceptions.NotFoundPragmaException;
+import exceptions.UnauthorizedPragmaException;
+import exceptions.ValidationPragmaException;
 import io.netty.handler.timeout.TimeoutException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -38,7 +38,7 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         HttpStatus status;
         Map < String, Object > response;
 
-        if ( ex instanceof ValidationException ve ) {
+        if ( ex instanceof ValidationPragmaException ve ) {
             status = HttpStatus.BAD_REQUEST;
             response = Map.of (
                     "message", "Validation Error",
@@ -47,10 +47,10 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
         } else if ( ex instanceof IllegalArgumentException ) {
             status = HttpStatus.BAD_REQUEST;
             response = Map.of ( "message", ex.getMessage ( ) );
-        } else if ( ex instanceof UnauthorizedException ) {
+        } else if ( ex instanceof UnauthorizedPragmaException ) {
             status = HttpStatus.UNAUTHORIZED;
             response = Map.of ( "message", "Unauthorized", "details", ex.getMessage ( ) );
-        } else if ( ex instanceof NotFoundException ) {
+        } else if ( ex instanceof NotFoundPragmaException ) {
             status = HttpStatus.NOT_FOUND;
             response = Map.of ( "message", "Not found", "details", ex.getMessage ( ) );
         } else if ( ex instanceof DuplicateKeyException ) {

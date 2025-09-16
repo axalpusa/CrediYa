@@ -4,6 +4,7 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
 import co.com.pragma.api.dto.request.ReportRequestDTO;
 import co.com.pragma.api.handler.OrderHandler;
+import constants.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -45,8 +46,8 @@ public class OrderOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
                             }
                     )
             ),
@@ -82,8 +83,8 @@ public class OrderOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "Order found"),
-                                    @ApiResponse(responseCode = "404", description = "Order not found")
+                                    @ApiResponse(responseCode = "200", description = Constants.ORDER_FOUND),
+                                    @ApiResponse(responseCode = "404", description = Constants.ORDER_NOT_FOUND)
                             }
                     )
             ),
@@ -105,8 +106,31 @@ public class OrderOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
+                            }
+                    )
+            ),
+            @RouterOperation(
+                    path = ApiPaths.ORDER,
+                    produces = {MediaType.APPLICATION_JSON_VALUE},
+                    method = RequestMethod.PUT,
+                    beanClass = OrderHandler.class,
+                    beanMethod = "listenUpdateOrder",
+                    operation = @Operation(
+                            operationId = "updateOrder",
+                            summary = "Update status order (user Assessor Approved o Reject)",
+                            tags = {"Order"},
+                            requestBody = @RequestBody(
+                                    required = true,
+                                    content = @Content(
+                                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                            schema = @Schema(implementation = OrderRequestDTO.class)
+                                    )
+                            ),
+                            responses = {
+                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
                             }
                     )
             ),

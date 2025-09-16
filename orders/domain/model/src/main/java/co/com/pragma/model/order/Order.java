@@ -29,6 +29,6 @@ public class Order {
         if ( other.getTermMonths ( ) != null ) this.termMonths = other.getTermMonths ( );
         if ( other.getEmailAddress ( ) != null ) this.emailAddress = other.getEmailAddress ( );
         if ( other.getIdStatus ( ) != null ) this.idStatus = other.getIdStatus ( );
-        if ( other.getIdTypeLoan ( ) != null ) this.idOrder = other.getIdTypeLoan ( );
+        if ( other.getIdTypeLoan ( ) != null ) this.idTypeLoan = other.getIdTypeLoan ( );
     }
 }

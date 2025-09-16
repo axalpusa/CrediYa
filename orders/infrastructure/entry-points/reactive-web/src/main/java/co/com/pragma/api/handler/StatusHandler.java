@@ -8,8 +8,9 @@ import co.com.pragma.model.status.Status;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.status.StatusUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.NotFoundException;
-import exceptions.ValidationException;
+import constants.Constants;
+import exceptions.NotFoundPragmaException;
+import exceptions.ValidationPragmaException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -33,8 +34,8 @@ public class StatusHandler {
     public Mono<ServerResponse> listenSaveStatus(ServerRequest request) {
         return transactionalAdapter.executeInTransaction(
                 request.bodyToMono(StatusRequestDTO.class)
-                        .switchIfEmpty(Mono.error(new ValidationException(
-                                List.of("Request body cannot be empty")
+                        .switchIfEmpty(Mono.error(new ValidationPragmaException (
+                                List.of( Constants.REQUEST_EMPTY)
                         )))
                         .flatMap(dto -> Mono.justOrEmpty(statusMapper.toModel(dto)))
                         .flatMap(statusUseCase::saveStatus)
@@ -48,7 +49,7 @@ public class StatusHandler {
     public Mono<ServerResponse> listenUpdateStatus(ServerRequest request) {
         return request.bodyToMono(StatusResponseDTO.class)
                 .flatMap(dto -> statusUseCase.getStatusById(dto.getIdStatus())
-                        .switchIfEmpty(Mono.error(new NotFoundException("Status not found")))
+                        .switchIfEmpty(Mono.error(new NotFoundPragmaException ( Constants.STATUS_NOT_FOUND)))
                         .map(existing -> {
                             Status partial = objectMapper.convertValue(dto, Status.class);
                             if (partial == null) partial = new Status();

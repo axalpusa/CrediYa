@@ -2,7 +2,8 @@ package co.com.pragma.usecase.status;
 
 import co.com.pragma.model.status.Status;
 import co.com.pragma.model.status.gateways.StatusRepository;
-import exceptions.ValidationException;
+import constants.Constants;
+import exceptions.ValidationPragmaException;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -31,8 +32,8 @@ public class StatusUseCase {
 
     public Mono < Status > getStatusById(UUID id) {
         return statusRepository.findById ( id )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Status not found: " + id )
+                .switchIfEmpty ( Mono.error ( new ValidationPragmaException (
+                        List.of (  Constants.STATUS_NOT_FOUND + id )
                 ) ) );
     }
 

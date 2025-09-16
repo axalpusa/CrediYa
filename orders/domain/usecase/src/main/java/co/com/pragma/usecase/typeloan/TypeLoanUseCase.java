@@ -2,7 +2,8 @@ package co.com.pragma.usecase.typeloan;
 
 import co.com.pragma.model.typeloan.TypeLoan;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
-import exceptions.ValidationException;
+import constants.Constants;
+import exceptions.ValidationPragmaException;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,8 +38,8 @@ public class TypeLoanUseCase {
 
     public Mono < TypeLoan > getTypeLoanById(UUID id) {
         return typeLoanRepository.findById ( id )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Type loan not found: " + id )
+                .switchIfEmpty ( Mono.error ( new ValidationPragmaException (
+                        List.of ( Constants.TYPE_LOAN_NOT_FOUND + id )
                 ) ) );
     }
 

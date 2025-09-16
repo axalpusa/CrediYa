@@ -4,13 +4,13 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.TypeLoanRequestDTO;
 import co.com.pragma.api.dto.response.TypeLoanResponseDTO;
 import co.com.pragma.api.mapper.TypeLoanMapperDTO;
-import co.com.pragma.model.status.Status;
 import co.com.pragma.model.typeloan.TypeLoan;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.typeloan.TypeLoanUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.NotFoundException;
-import exceptions.ValidationException;
+import constants.Constants;
+import exceptions.NotFoundPragmaException;
+import exceptions.ValidationPragmaException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -34,8 +34,8 @@ public class TypeLoanHandler {
     public Mono < ServerResponse > listenSaveTypeLoan(ServerRequest request) {
         return transactionalAdapter.executeInTransaction (
                 request.bodyToMono ( TypeLoanRequestDTO.class )
-                        .switchIfEmpty ( Mono.error ( new ValidationException (
-                                List.of ( "Request body cannot be empty" )
+                        .switchIfEmpty ( Mono.error ( new ValidationPragmaException (
+                                List.of ( Constants.REQUEST_EMPTY )
                         ) ) )
                         .flatMap ( dto -> Mono.justOrEmpty ( typeLoanMapper.toModel ( dto ) ) )
                         .flatMap ( typeloanUseCase::saveTypeLoan )
@@ -49,7 +49,7 @@ public class TypeLoanHandler {
     public Mono < ServerResponse > listenUpdateTypeLoan(ServerRequest request) {
         return request.bodyToMono ( TypeLoanResponseDTO.class )
                 .flatMap ( dto -> typeloanUseCase.getTypeLoanById ( dto.getIdTypeLoan ( ) )
-                        .switchIfEmpty ( Mono.error ( new NotFoundException ( "Type Loan not found" ) ) )
+                        .switchIfEmpty ( Mono.error ( new NotFoundPragmaException ( Constants.TYPE_LOAN_NOT_FOUND  ) ) )
                         .map ( existing -> {
                             TypeLoan partial = objectMapper.convertValue ( dto, TypeLoan.class );
                             if ( partial == null ) partial = new TypeLoan ( );

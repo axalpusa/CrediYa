@@ -3,6 +3,7 @@ package co.com.pragma.api.openapi;
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.TypeLoanRequestDTO;
 import co.com.pragma.api.handler.TypeLoanHandler;
+import constants.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -44,8 +45,8 @@ public class TypeLoanOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
                             }
                     )
             ),
@@ -81,8 +82,8 @@ public class TypeLoanOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "Type loan found"),
-                                    @ApiResponse(responseCode = "404", description = "type loan not found")
+                                    @ApiResponse(responseCode = "200", description = Constants.TYPE_LOAN_FOUND),
+                                    @ApiResponse(responseCode = "404", description = Constants.TYPE_LOAN_NOT_FOUND)
                             }
                     )
             )

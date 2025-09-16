@@ -2,7 +2,7 @@ package co.com.pragma.usecase.status;
 
 import co.com.pragma.model.status.Status;
 import co.com.pragma.model.status.gateways.StatusRepository;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -12,6 +12,7 @@ import reactor.test.StepVerifier;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,7 +36,7 @@ public class StatusTest {
         when ( statusRepository.findById ( id ) ).thenReturn ( Mono.just ( status ) );
 
         StepVerifier.create ( statusUseCase.getStatusById ( id ) )
-                .expectNextMatches ( u -> u.getName ( ).equals ( "Status" )  )
+                .expectNextMatches ( u -> u.getName ( ).equals ( "Status" ) )
                 .verifyComplete ( );
 
         verify ( statusRepository ).findById ( id );
@@ -49,7 +50,7 @@ public class StatusTest {
         when ( statusRepository.findById ( id ) ).thenReturn ( Mono.empty ( ) );
 
         StepVerifier.create ( statusUseCase.getStatusById ( id ) )
-                .expectErrorMatches ( throwable -> throwable instanceof ValidationException &&
+                .expectErrorMatches ( throwable -> throwable instanceof ValidationPragmaException &&
                         throwable.getMessage ( ).contains ( id.toString ( ) ) )
                 .verify ( );
 
@@ -125,7 +126,7 @@ public class StatusTest {
     void merge_shouldUpdateFields_whenOtherHasValues() {
         UUID id = UUID.randomUUID ( );
         Status original = Status.builder ( )
-                .idStatus (id )
+                .idStatus ( id )
                 .name ( "Status" )
                 .description ( "desc" )
                 .build ( );
@@ -169,6 +170,76 @@ public class StatusTest {
         assertThat ( status.getIdStatus ( ) ).isEqualTo ( id );
         assertThat ( status.getName ( ) ).isEqualTo ( "Status" );
         assertThat ( status.getDescription ( ) ).isEqualTo ( "desc" );
+    }
+
+    @Test
+    void updateStatus_shouldUpdateNameOnly() {
+        UUID id = UUID.randomUUID ( );
+        Status existingStatus = new Status ( );
+        existingStatus.setIdStatus ( id );
+        existingStatus.setName ( "Old Name" );
+        existingStatus.setDescription ( "Old Desc" );
+
+        Status newStatus = new Status ( );
+        newStatus.setIdStatus ( id );
+        newStatus.setName ( "New Name" );
+
+        when ( statusRepository.findById ( id ) ).thenReturn ( Mono.just ( existingStatus ) );
+        when ( statusRepository.save ( any ( Status.class ) ) )
+                .thenAnswer ( invocation -> Mono.just ( invocation.getArgument ( 0 ) ) );
+
+        StepVerifier.create ( statusUseCase.updateStatus ( newStatus ) )
+                .expectNextMatches ( updated ->
+                        updated.getName ( ).equals ( "New Name" ) &&
+                                updated.getDescription ( ).equals ( "Old Desc" ) )
+                .verifyComplete ( );
+    }
+
+    @Test
+    void updateStatus_shouldUpdateDescriptionOnly() {
+        UUID id = UUID.randomUUID ( );
+        Status existingStatus = new Status ( );
+        existingStatus.setIdStatus ( id );
+        existingStatus.setName ( "Old Name" );
+        existingStatus.setDescription ( "Old Desc" );
+
+        Status newStatus = new Status ( );
+        newStatus.setIdStatus ( id );
+        newStatus.setDescription ( "New Desc" );
+
+        when ( statusRepository.findById ( id ) ).thenReturn ( Mono.just ( existingStatus ) );
+        when ( statusRepository.save ( any ( Status.class ) ) )
+                .thenAnswer ( invocation -> Mono.just ( invocation.getArgument ( 0 ) ) );
+
+        StepVerifier.create ( statusUseCase.updateStatus ( newStatus ) )
+                .expectNextMatches ( updated ->
+                        updated.getName ( ).equals ( "Old Name" ) &&
+                                updated.getDescription ( ).equals ( "New Desc" ) )
+                .verifyComplete ( );
+    }
+
+    @Test
+    void updateStatus_shouldUpdateNameAndDescription() {
+        UUID id = UUID.randomUUID ( );
+        Status existingStatus = new Status ( );
+        existingStatus.setIdStatus ( id );
+        existingStatus.setName ( "Old Name" );
+        existingStatus.setDescription ( "Old Desc" );
+
+        Status newStatus = new Status ( );
+        newStatus.setIdStatus ( id );
+        newStatus.setName ( "New Name" );
+        newStatus.setDescription ( "New Desc" );
+
+        when ( statusRepository.findById ( id ) ).thenReturn ( Mono.just ( existingStatus ) );
+        when ( statusRepository.save ( any ( Status.class ) ) )
+                .thenAnswer ( invocation -> Mono.just ( invocation.getArgument ( 0 ) ) );
+
+        StepVerifier.create ( statusUseCase.updateStatus ( newStatus ) )
+                .expectNextMatches ( updated ->
+                        updated.getName ( ).equals ( "New Name" ) &&
+                                updated.getDescription ( ).equals ( "New Desc" ) )
+                .verifyComplete ( );
     }
 
 

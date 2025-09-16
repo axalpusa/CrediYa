@@ -3,6 +3,7 @@ package co.com.pragma.api.openapi;
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.StatusRequestDTO;
 import co.com.pragma.api.handler.StatusHandler;
+import constants.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -44,8 +45,8 @@ public class StatusOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
                             }
                     )
             ),
@@ -81,8 +82,8 @@ public class StatusOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "Status found"),
-                                    @ApiResponse(responseCode = "404", description = "Status not found")
+                                    @ApiResponse(responseCode = "200", description = Constants.STATUS_FOUND),
+                                    @ApiResponse(responseCode = "404", description = Constants.STATUS_NOT_FOUND)
                             }
                     )
             )

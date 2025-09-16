@@ -2,7 +2,7 @@ package co.com.pragma.usecase.typeloan;
 
 import co.com.pragma.model.typeloan.TypeLoan;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -53,7 +53,7 @@ public class TypeLoanTest {
         when ( typeLoanRepository.findById ( id ) ).thenReturn ( Mono.empty ( ) );
 
         StepVerifier.create ( typeLoanUseCase.getTypeLoanById ( id ) )
-                .expectErrorMatches ( throwable -> throwable instanceof ValidationException &&
+                .expectErrorMatches ( throwable -> throwable instanceof ValidationPragmaException &&
                         throwable.getMessage ( ).contains ( id.toString ( ) ) )
                 .verify ( );
 
@@ -198,5 +198,44 @@ public class TypeLoanTest {
         assertThat ( typeLoan.getAutomaticValidation ( ) ).isEqualTo ( true );
     }
 
+    @Test
+    void updateTypeLoan_shouldUpdateFieldsSuccessfully() {
+        UUID typeLoanId = UUID.randomUUID();
+
+        TypeLoan existing = new TypeLoan();
+        existing.setIdTypeLoan(typeLoanId);
+        existing.setName("Personal Loan");
+        existing.setInterestRate(BigDecimal.valueOf(5.0));
+        existing.setAutomaticValidation(false);
+        existing.setMinimumAmount(BigDecimal.valueOf(1000));
+        existing.setMaximumAmount(BigDecimal.valueOf(5000));
+
+        TypeLoan updated = new TypeLoan();
+        updated.setIdTypeLoan(typeLoanId);
+        updated.setName("Updated Loan");
+        updated.setInterestRate(BigDecimal.valueOf(7.5));
+        updated.setAutomaticValidation(true);
+        updated.setMinimumAmount(BigDecimal.valueOf(1500));
+        updated.setMaximumAmount(BigDecimal.valueOf(6000));
+
+        when(typeLoanRepository.findById(typeLoanId)).thenReturn(Mono.just(existing));
+        when(typeLoanRepository.save(Mockito.any(TypeLoan.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        Mono<TypeLoan> result = typeLoanUseCase.updateTypeLoan(updated);
+
+        StepVerifier.create(result)
+                .assertNext(saved -> {
+                    assertThat(saved.getIdTypeLoan()).isEqualTo(typeLoanId);
+                    assertThat(saved.getName()).isEqualTo("Updated Loan");
+                    assertThat(saved.getInterestRate()).isEqualTo(BigDecimal.valueOf(7.5));
+                    assertThat(saved.getAutomaticValidation()).isTrue();
+                    assertThat(saved.getMinimumAmount()).isEqualTo(BigDecimal.valueOf(1500));
+                    assertThat(saved.getMaximumAmount()).isEqualTo(BigDecimal.valueOf(6000));
+                })
+                .verifyComplete();
+
+        verify(typeLoanRepository).findById(typeLoanId);
+        verify(typeLoanRepository).save(Mockito.any(TypeLoan.class));
+    }
 
 }

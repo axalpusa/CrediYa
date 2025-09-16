@@ -5,8 +5,8 @@ import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.OrderPending;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
-import enums.StatusEnum;
-import exceptions.ValidationException;
+import constants.Constants;
+import exceptions.ValidationPragmaException;
 import lombok.AllArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -24,12 +24,12 @@ public class OrderUseCase {
     public Mono<Order> saveOrder(Order order) {
         return validateOrder(order)
                 .then(typeLoanRepository.findById(order.getIdTypeLoan())
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Type loan not found.")))
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException( Constants.REQUEST_EMPTY)))
                 )
                 .flatMap(typeLoan -> {
                     if (order.getAmount().compareTo(typeLoan.getMinimumAmount()) < 0 ||
                             order.getAmount().compareTo(typeLoan.getMaximumAmount()) > 0) {
-                        return Mono.error(new IllegalArgumentException("El monto no está dentro del rango permitido"));
+                        return Mono.error(new IllegalArgumentException("The amount is not within the allowed range"));
                     }
 
                     return orderRepository.save(order);
@@ -45,18 +45,18 @@ public class OrderUseCase {
         if (order.getAmount() == null || order.getAmount().doubleValue() < 0)
             errors.add("Amount is required");
 
-        return errors.isEmpty() ? Mono.empty() : Mono.error(new ValidationException(errors));
+        return errors.isEmpty() ? Mono.empty() : Mono.error(new ValidationPragmaException (errors));
     }
 
     public Mono<Order> updateOrder(Order order) {
-        if (order == null) return Mono.error(new IllegalArgumentException("Order is null"));
+        if (order == null) return Mono.error(new IllegalArgumentException(Constants.ORDER_NOT_FOUND));
         return orderRepository.save(order);
     }
 
     public Mono<Order> getOrderById(UUID id) {
         return orderRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ValidationException(
-                        List.of("Order not found: " + id)
+                .switchIfEmpty(Mono.error(new ValidationPragmaException (
+                        List.of( Constants.ORDER_NOT_FOUND + id)
                 )));
     }
 

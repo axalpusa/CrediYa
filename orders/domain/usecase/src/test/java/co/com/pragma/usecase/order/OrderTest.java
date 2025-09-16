@@ -6,7 +6,8 @@ import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.typeloan.TypeLoan;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
-import exceptions.ValidationException;
+import constants.Constants;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -32,6 +33,7 @@ public class OrderTest {
     void setUp() {
         orderRepository = Mockito.mock ( OrderRepository.class );
         typeLoanRepository = Mockito.mock ( TypeLoanRepository.class );
+        notificationRepository = Mockito.mock ( NotificationRepository.class );
         orderUseCase = new OrderUseCase ( orderRepository, typeLoanRepository ,notificationRepository);
     }
 
@@ -67,7 +69,7 @@ public class OrderTest {
         when ( orderRepository.findById ( id ) ).thenReturn ( Mono.empty ( ) );
 
         StepVerifier.create ( orderUseCase.getOrderById ( id ) )
-                .expectErrorMatches ( throwable -> throwable instanceof ValidationException &&
+                .expectErrorMatches ( throwable -> throwable instanceof ValidationPragmaException &&
                         throwable.getMessage ( ).contains ( id.toString ( ) ) )
                 .verify ( );
 
@@ -179,7 +181,7 @@ public class OrderTest {
         StepVerifier.create ( orderUseCase.saveOrder ( order ) )
                 .expectErrorMatches ( throwable ->
                         throwable instanceof IllegalArgumentException &&
-                                throwable.getMessage ( ).equals ( "Type loan not found." ) )
+                                throwable.getMessage ( ).equals (  Constants.REQUEST_EMPTY ) )
                 .verify ( );
     }
 
@@ -203,7 +205,7 @@ public class OrderTest {
         StepVerifier.create ( orderUseCase.saveOrder ( order ) )
                 .expectErrorMatches ( throwable ->
                         throwable instanceof IllegalArgumentException &&
-                                throwable.getMessage ( ).equals ( "El monto no está dentro del rango permitido" ) )
+                                throwable.getMessage ( ).equals ( "The amount is not within the allowed range" ) )
                 .verify ( );
     }
 
@@ -239,8 +241,8 @@ public class OrderTest {
 
         StepVerifier.create ( orderUseCase.getOrderById ( id ) )
                 .expectErrorMatches ( throwable ->
-                        throwable instanceof ValidationException &&
-                                ((ValidationException) throwable).getErrors ( ).get ( 0 ).contains ( id.toString ( ) ) )
+                        throwable instanceof ValidationPragmaException &&
+                                ((ValidationPragmaException) throwable).getErrors ( ).get ( 0 ).contains ( id.toString ( ) ) )
                 .verify ( );
     }
 
@@ -299,8 +301,8 @@ public class OrderTest {
 
         StepVerifier.create(orderUseCase.saveOrder(invalidOrder))
                 .expectErrorMatches(throwable ->
-                        throwable instanceof ValidationException &&
-                                ((ValidationException) throwable).getErrors().containsAll(
+                        throwable instanceof ValidationPragmaException &&
+                                ((ValidationPragmaException) throwable).getErrors().containsAll(
                                         List.of(
                                                 "Document id is required.",
                                                 "Email address is required.",
@@ -313,5 +315,35 @@ public class OrderTest {
 
         verify(typeLoanRepository).findById(typeLoanId);
     }
+
+    @Test
+    void updateOrder_shouldFail_whenOrderIsNull() {
+        StepVerifier.create(orderUseCase.updateOrder(null))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof IllegalArgumentException &&
+                                throwable.getMessage().equals(Constants.ORDER_NOT_FOUND)
+                )
+                .verify();
+    }
+
+    @Test
+    void updateOrderAndNotify_shouldSaveAndSendNotification() {
+        Order order = Order.builder()
+                .idOrder(UUID.randomUUID())
+                .amount(BigDecimal.valueOf(3000))
+                .emailAddress("notify@test.com")
+                .build();
+
+        when(orderRepository.save(order)).thenReturn(Mono.just(order));
+        when(notificationRepository.sendOrderStatus(order)).thenReturn(Mono.empty());
+
+        StepVerifier.create(orderUseCase.updateOrderAndNotify(order))
+                .expectNext(order)
+                .verifyComplete();
+
+        verify(orderRepository).save(order);
+        verify(notificationRepository).sendOrderStatus(order);
+    }
+
 
 }
