@@ -4,6 +4,7 @@ import co.com.pragma.model.notification.gateways.NotificationRepository;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.status.gateways.StatusRepository;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
+import co.com.pragma.model.user.gateways.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -48,6 +49,10 @@ public class UseCasesConfigTest {
         @Bean
         public NotificationRepository notificationRepository() {
             return Mockito.mock ( NotificationRepository.class );
+        }
+        @Bean
+        public UserRepository userRepository() {
+            return Mockito.mock ( UserRepository.class );
         }
     }
 }

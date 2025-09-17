@@ -75,6 +75,7 @@ public class SecurityConfig {
         auth.pathMatchers ( HttpMethod.DELETE, ApiPaths.USERSBYID ).access ( this::isAdminOrAsesor );
         auth.pathMatchers ( HttpMethod.GET, ApiPaths.USERSALL ).access ( this::isAdminOrAsesor );
         auth.pathMatchers ( HttpMethod.GET, ApiPaths.USERSBYID ).access ( this::isAdminOrAsesor );
+        auth.pathMatchers ( HttpMethod.GET, ApiPaths.USERSBYEMAIL ).access ( this::isAdminOrAsesor );
     }
 
     private void configureRolEndpoints(ServerHttpSecurity.AuthorizeExchangeSpec auth) {

@@ -129,7 +129,7 @@ public class RouterOrderHandlerTest {
         when(authServiceClient.validateToken(anyString())).thenReturn(Mono.just(dummyAuth));
 
         lenient().when(orderMapper.toModel(any(OrderRequestDTO.class))).thenReturn(toSave);
-        lenient().when(orderUseCase.saveOrder(any(Order.class))).thenReturn(Mono.just(saved));
+        lenient().when(orderUseCase.saveOrder(any(Order.class),anyString())).thenReturn(Mono.just(saved));
         lenient().when(orderMapper.toResponse(any(Order.class))).thenReturn(response);
         lenient().when(transactionalAdapter.executeInTransaction(any(Mono.class)))
                 .thenAnswer(invocation -> invocation.<Mono<?>>getArgument(0));

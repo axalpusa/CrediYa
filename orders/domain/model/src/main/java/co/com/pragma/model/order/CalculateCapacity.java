@@ -1,10 +1,6 @@
 package co.com.pragma.model.order;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,7 +9,8 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
+@ToString
 public class CalculateCapacity {
     Order order;
-    List < OrderPending > orderPending;
+    List<ReportResponse> reportResponses;
 }

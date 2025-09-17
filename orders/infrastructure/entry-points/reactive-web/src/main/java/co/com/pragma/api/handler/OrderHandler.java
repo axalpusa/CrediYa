@@ -4,12 +4,13 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.dto.response.OrderResponseDTO;
-import co.com.pragma.api.dto.response.ReportResponseDTO;
+import co.com.pragma.model.order.ReportResponse;
 import co.com.pragma.api.dto.response.UserReportResponseDTO;
 import co.com.pragma.api.mapper.OrderMapperDTO;
 import co.com.pragma.api.services.AuthServiceClient;
 import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.OrderPending;
+import co.com.pragma.model.user.User;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.order.OrderUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,7 +52,7 @@ public class OrderHandler {
                                         .flatMap ( dto -> {
                                             Order order = orderMapper.toModel ( dto );
                                            // order.setIdStatus ( StatusEnum.REVISION.getId ( ) );
-                                            return orderUseCase.saveOrder ( order );
+                                            return orderUseCase.saveOrder ( order,authUser.getToken());
                                         } )
                                         .flatMap ( savedOrder ->
                                                 ServerResponse.created ( URI.create ( ApiPaths.ORDER + savedOrder.getIdOrder ( ) ) )
@@ -76,7 +77,15 @@ public class OrderHandler {
         int size = request.queryParam ( "size" )
                 .map ( Integer::parseInt )
                 .orElse ( 10 );
-        return validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
+        return validateUserToken(request, RolEnum.ASSESSOR.getId())
+                .flatMap(authUser ->
+                        orderUseCase.findPendingOrdersWithUserData(filterStatus, filterEmail, page, size,authUser.getToken())
+                                .collectList()
+                                .flatMap(list -> ServerResponse.ok()
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .bodyValue(list))
+                );
+       /* return validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
                 .flatMap ( authUser ->
                         orderUseCase.findPendingOrders ( filterStatus, filterEmail, page, size )
                                 .flatMap ( order ->
@@ -89,23 +98,11 @@ public class OrderHandler {
                 .flatMap ( list -> ServerResponse.ok ( )
                         .contentType ( MediaType.APPLICATION_JSON )
                         .bodyValue ( list )
-                );
+                );*/
     }
 
 
-    private ReportResponseDTO mapToReportDTO(OrderPending order, UserReportResponseDTO user) {
-        ReportResponseDTO report = new ReportResponseDTO ( );
-        report.setStatusOrder ( order.getStatusOrder ( ) );
-        report.setAmount ( order.getAmount ( ) );
-        report.setEmail ( user.getEmailAddress ( ) );
-        report.setName ( user.getFirstName ( ) + " " + user.getLastName ( ) );
-        report.setBaseSalary ( user.getBaseSalary ( ) );
-        report.setTypeLoan ( order.getTypeLoan ( ) );
-        report.setInterestRate ( order.getInterestRate ( ) );
-        report.setTermMonths ( order.getTermMonths ( ) );
-        report.setTotalMonthlyDebtApprovedRequests ( order.getTotalMonthlyDebtApprovedRequests ( ) );
-        return report;
-    }
+
 
     private Mono < AuthResponseDTO > validateUserToken(ServerRequest request, UUID idRol) {
         String authHeader = request.headers ( ).firstHeader ( "Authorization" );

@@ -1,20 +1,16 @@
-package co.com.pragma.api.dto.response;
+package co.com.pragma.model.order;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @Builder
-public class ReportResponseDTO {
+@ToString
+public class ReportResponse {
     private BigDecimal amount;
     private Integer termMonths;
     private String email;

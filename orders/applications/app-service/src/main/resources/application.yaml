@@ -52,4 +52,5 @@ auth:
 adapter:
   sqs:
     region: ${AWS_REGION}
-    queueUrl: ${SQS_ENDPOINT}
+    orderStatusQueueUrl: ${SQS_ENDPOINT_STATUS}
+    calculateCapacityQueueUrl: ${SQS_ENDPOINT_CALCULATE}

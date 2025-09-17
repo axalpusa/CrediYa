@@ -6,6 +6,7 @@ import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.typeloan.TypeLoan;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
+import co.com.pragma.model.user.gateways.UserRepository;
 import constants.Constants;
 import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,13 +29,16 @@ public class OrderTest {
     private TypeLoanRepository typeLoanRepository;
     private OrderUseCase orderUseCase;
     private NotificationRepository notificationRepository;
+    private UserRepository userRepository;
 
     @BeforeEach
     void setUp() {
         orderRepository = Mockito.mock ( OrderRepository.class );
         typeLoanRepository = Mockito.mock ( TypeLoanRepository.class );
         notificationRepository = Mockito.mock ( NotificationRepository.class );
-        orderUseCase = new OrderUseCase ( orderRepository, typeLoanRepository ,notificationRepository);
+        userRepository = Mockito.mock ( UserRepository.class );
+
+        orderUseCase = new OrderUseCase ( orderRepository, typeLoanRepository ,notificationRepository,userRepository);
     }
 
     @Test
@@ -141,6 +145,7 @@ public class OrderTest {
     @Test
     void saveOrder_shouldSaveSuccessfully_whenValid() {
         UUID idTypeLoan = UUID.randomUUID ( );
+        String token = "token-fake";
         Order order = Order.builder ( )
                 .idTypeLoan ( idTypeLoan )
                 .amount ( BigDecimal.valueOf ( 5000 ) )
@@ -157,7 +162,7 @@ public class OrderTest {
         when ( typeLoanRepository.findById ( idTypeLoan ) ).thenReturn ( Mono.just ( typeLoan ) );
         when ( orderRepository.save ( order ) ).thenReturn ( Mono.just ( order ) );
 
-        StepVerifier.create ( orderUseCase.saveOrder ( order ) )
+        StepVerifier.create ( orderUseCase.saveOrder ( order ,token) )
                 .expectNextMatches ( saved -> saved.getAmount ( ).equals ( order.getAmount ( ) ) &&
                         saved.getIdTypeLoan ( ).equals ( order.getIdTypeLoan ( ) ) )
                 .verifyComplete ( );
@@ -168,6 +173,7 @@ public class OrderTest {
     @Test
     void saveOrder_shouldFail_whenTypeLoanNotFound() {
         UUID idTypeLoan = UUID.randomUUID ( );
+        String token = "token-fake";
         Order order = Order.builder ( )
                 .idTypeLoan ( idTypeLoan )
                 .amount ( BigDecimal.valueOf ( 5000 ) )
@@ -179,7 +185,7 @@ public class OrderTest {
 
         when ( typeLoanRepository.findById ( idTypeLoan ) ).thenReturn ( Mono.empty ( ) );
 
-        StepVerifier.create ( orderUseCase.saveOrder ( order ) )
+        StepVerifier.create ( orderUseCase.saveOrder ( order ,token) )
                 .expectErrorMatches ( throwable ->
                         throwable instanceof IllegalArgumentException &&
                                 throwable.getMessage ( ).equals (  Constants.REQUEST_EMPTY ) )
@@ -189,6 +195,7 @@ public class OrderTest {
     @Test
     void saveOrder_shouldFail_whenAmountOutOfRange() {
         UUID typeLoanId = UUID.randomUUID ( );
+        String token = "token-fake";
         Order order = Order.builder ( )
                 .idTypeLoan ( typeLoanId )
                 .amount ( BigDecimal.valueOf ( 15000 ) )
@@ -203,7 +210,7 @@ public class OrderTest {
 
         when ( typeLoanRepository.findById ( typeLoanId ) ).thenReturn ( Mono.just ( typeLoan ) );
 
-        StepVerifier.create ( orderUseCase.saveOrder ( order ) )
+        StepVerifier.create ( orderUseCase.saveOrder ( order,token ) )
                 .expectErrorMatches ( throwable ->
                         throwable instanceof IllegalArgumentException &&
                                 throwable.getMessage ( ).equals ( "The amount is not within the allowed range" ) )
@@ -291,6 +298,7 @@ public class OrderTest {
     @Test
     void saveOrder_shouldFail_whenValidationFails() {
         UUID typeLoanId = UUID.randomUUID();
+        String token = "token-fake";
         Order invalidOrder = Order.builder()
                 .idTypeLoan(typeLoanId)
                 .documentId("")
@@ -301,7 +309,7 @@ public class OrderTest {
 
         when(typeLoanRepository.findById(typeLoanId)).thenReturn(Mono.empty());
 
-        StepVerifier.create(orderUseCase.saveOrder(invalidOrder))
+        StepVerifier.create(orderUseCase.saveOrder(invalidOrder,token))
                 .expectErrorMatches(throwable ->
                         throwable instanceof ValidationPragmaException &&
                                 ((ValidationPragmaException) throwable).getErrors().containsAll(
@@ -350,6 +358,7 @@ public class OrderTest {
     @Test
     void saveOrder_shouldSendToCapacityLambda_whenAutomaticValidationTrue() {
         UUID typeLoanId = UUID.randomUUID();
+        String token = "token-fake";
         Order order = Order.builder()
                 .idTypeLoan(typeLoanId)
                 .amount(BigDecimal.valueOf(5000))
@@ -370,7 +379,7 @@ public class OrderTest {
                 Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
                 .thenReturn(Flux.empty());
 
-        StepVerifier.create(orderUseCase.saveOrder(order))
+        StepVerifier.create(orderUseCase.saveOrder(order,token))
                 .expectNextMatches(saved ->
                         saved.getAmount().equals(order.getAmount()) &&
                                 saved.getIdTypeLoan().equals(order.getIdTypeLoan()))

@@ -2,7 +2,7 @@ package co.com.pragma.api.services;
 
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.response.AuthResponseDTO;
-import co.com.pragma.api.dto.response.UserReportResponseDTO;
+import co.com.pragma.model.user.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -20,22 +20,22 @@ public class AuthServiceClient {
                 .build();
     }
 
-    public Mono < AuthResponseDTO > validateToken(String token) {
-        return webClient.get ( )
-                .uri ( ApiPaths.VALIDATE )
-                .header ( "Authorization", "Bearer " + token )
-                .retrieve ( )
-                .bodyToMono ( AuthResponseDTO.class );
+    public Mono<AuthResponseDTO> validateToken(String token) {
+        return webClient.get()
+                .uri(ApiPaths.VALIDATE)
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(AuthResponseDTO.class);
     }
 
-    public Mono < UserReportResponseDTO > getUserByEmailAddress(String token, String email) {
-        return webClient.get ( )
-                .uri ( uriBuilder -> uriBuilder
-                        .path ( ApiPaths.USERSBYEMAIL )
-                        .build ( email ) )
-                .header ( "Authorization", "Bearer " + token )
-                .retrieve ( )
-                .bodyToMono ( UserReportResponseDTO.class );
+    public Mono<User> getUserByEmailAddress(String email, String token) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(ApiPaths.USERSBYEMAIL)
+                        .build(email))
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(User.class);
     }
 
 

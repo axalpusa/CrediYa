@@ -91,8 +91,8 @@ class ConfigTest {
                     order.setIdStatus(StatusEnum.PENDENT.getId());
                     return order;
                 });
-
-        when(orderUseCase.saveOrder(any(Order.class)))
+        String token = "token-fake";
+        when(orderUseCase.saveOrder(any(Order.class),token))
                 .thenAnswer(invocation -> {
                     Order order = invocation.getArgument(0);
                     order.setIdOrder(UUID.randomUUID());
