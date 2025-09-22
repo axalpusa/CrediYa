@@ -3,7 +3,6 @@ package co.com.pragma.api.openapi;
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.TypeLoanRequestDTO;
 import co.com.pragma.api.handler.TypeLoanHandler;
-import constants.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -21,6 +20,8 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
+
+import static constants.Constants.*;
 
 @Configuration
 public class TypeLoanOpenApi {
@@ -45,8 +46,8 @@ public class TypeLoanOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
-                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
+                                    @ApiResponse(responseCode = "201", description = SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID)
                             }
                     )
             ),
@@ -82,8 +83,8 @@ public class TypeLoanOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = Constants.TYPE_LOAN_FOUND),
-                                    @ApiResponse(responseCode = "404", description = Constants.TYPE_LOAN_NOT_FOUND)
+                                    @ApiResponse(responseCode = "200", description = TYPE_LOAN_FOUND),
+                                    @ApiResponse(responseCode = "404", description = TYPE_LOAN_NOT_FOUND)
                             }
                     )
             )

@@ -6,5 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record SQSSenderProperties(
      String region,
      String calculateCapacityQueueUrl,
-     String orderStatusQueueUrl){
+     String orderStatusQueueUrl,
+     String calculateCapacityResponseQueueUrl){
 }

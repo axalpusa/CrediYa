@@ -88,9 +88,14 @@ public class SQSSender implements NotificationRepository {
 
     @Override
     public Mono < Void > sendCalculateCapacity(CalculateCapacity calculateCapacity) {
+        Map<String, Object> payload = Map.of(
+                "order", calculateCapacity.getOrder(),
+                "reportResponses", calculateCapacity.getReportResponses()
+        );
+
         String messageBody;
         try {
-            messageBody = objectMapper.writeValueAsString ( calculateCapacity );
+            messageBody = objectMapper.writeValueAsString ( payload );
         } catch (Exception e) {
             log.error ( "Error convirtiendo CalculateCapacity a JSON", e );
             return Mono.error ( e );

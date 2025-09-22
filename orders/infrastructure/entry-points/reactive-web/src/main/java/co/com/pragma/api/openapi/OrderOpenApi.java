@@ -4,7 +4,6 @@ import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.dto.request.OrderRequestDTO;
 import co.com.pragma.api.dto.request.ReportRequestDTO;
 import co.com.pragma.api.handler.OrderHandler;
-import constants.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -22,6 +21,8 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
+
+import static constants.Constants.*;
 
 @Configuration
 public class OrderOpenApi {
@@ -46,8 +47,8 @@ public class OrderOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
-                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
+                                    @ApiResponse(responseCode = "201", description = SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID)
                             }
                     )
             ),
@@ -83,8 +84,8 @@ public class OrderOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = Constants.ORDER_FOUND),
-                                    @ApiResponse(responseCode = "404", description = Constants.ORDER_NOT_FOUND)
+                                    @ApiResponse(responseCode = "200", description = ORDER_FOUND),
+                                    @ApiResponse(responseCode = "404", description = ORDER_NOT_FOUND)
                             }
                     )
             ),
@@ -106,8 +107,8 @@ public class OrderOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
-                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
+                                    @ApiResponse(responseCode = "201", description = SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID)
                             }
                     )
             ),
@@ -129,8 +130,8 @@ public class OrderOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = Constants.SUCCESSFUL),
-                                    @ApiResponse(responseCode = "400", description = Constants.REQUEST_INVALID)
+                                    @ApiResponse(responseCode = "201", description = SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID)
                             }
                     )
             ),

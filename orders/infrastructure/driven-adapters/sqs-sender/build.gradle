@@ -10,4 +10,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.15.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
 
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+
+
 }

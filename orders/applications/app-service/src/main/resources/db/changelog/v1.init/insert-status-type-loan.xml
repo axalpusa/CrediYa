@@ -72,4 +72,16 @@
             <column name="automatic_validation" valueBoolean="false"/>
         </insert>
     </changeSet>
+    <changeSet id="5.6" author="axel">
+        <preConditions onFail="MARK_RAN" onError="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM status WHERE id_status = '723b63d8-507e-48a3-a8f1-896df273dfc8'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="status">
+            <column name="id_status" value="723b63d8-507e-48a3-a8f1-896df273dfc8"/>
+            <column name="name" value="RECHAZADO"/>
+            <column name="description" value="RECHAZADO"/>
+        </insert>
+    </changeSet>
 </databaseChangeLog>

@@ -17,4 +17,5 @@ public class Constants {
     public static final String USER_NOT_ALLOWED = "User is not alloweds";
     public static final String REQUEST_EMPTY = "Request body cannot be empty";
 
+    public static final String AMOUNT_OF_RANGE = "The amount is not within the allowed range";
 }

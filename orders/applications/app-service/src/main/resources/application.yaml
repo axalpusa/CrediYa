@@ -54,3 +54,4 @@ adapter:
     region: ${AWS_REGION}
     orderStatusQueueUrl: ${SQS_ENDPOINT_STATUS}
     calculateCapacityQueueUrl: ${SQS_ENDPOINT_CALCULATE}
+    calculateCapacityResponseQueueUrl: ${SQS_ENDPOINT_RESPONSE}

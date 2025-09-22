@@ -1,0 +1,17 @@
+{
+  "name": "calculatecapacity",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.894.0",
+    "@aws-sdk/client-sqs": "^3.894.0"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "description": ""
+}
