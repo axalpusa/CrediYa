@@ -1,8 +1,8 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
-const ses = new SESClient({ region: "us-east-2" });
-const sqs = new SQSClient({ region: "us-east-2" });
+const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
+const sesClient = new SESClient({ region: process.env.AWS_REGION });
 
 const RESULT_QUEUE_URL = process.env.RESULT_QUEUE_URL;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
@@ -51,7 +51,7 @@ async function sendToResultQueue(traceId, payload) {
     QueueUrl: RESULT_QUEUE_URL,
     MessageBody: JSON.stringify(payload),
   });
-  return sqs.send(cmd);
+  return sqsClient.send(cmd);
 }
 
 async function sendEmailSES(traceId, toEmail, subject, htmlBody) {
@@ -67,120 +67,134 @@ async function sendEmailSES(traceId, toEmail, subject, htmlBody) {
       Body: { Html: { Data: htmlBody } },
     },
   });
-  return ses.send(cmd);
+  return sesClient.send(cmd);
 }
 
-// 🔑 Export correcto en ESM (no uses exports.handler)
 export const handler = async (event) => {
-  for (const record of event.Records || []) {
-    const traceId =
-      (globalThis.crypto && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  console.log("Event recibido:", JSON.stringify(event));
 
-    try {
-      console.log(`[${traceId}] Received record ${record.messageId}`);
-      const payload = JSON.parse(record.body);
-      const { order, reportResponses } = payload;
+  const traceId = crypto.randomUUID?.() || `${Date.now()}-${Math.random() * 10000}`;
 
-      if (!order) {
-        console.warn(`[${traceId}] no order in payload; skipping`);
+  try {
+    for (const record of event.Records || []) {
+      console.log(`[${traceId}] RAW record.body:`, record.body);
+
+      let payload;
+      try {
+        payload = JSON.parse(record.body);
+        // Manejo de doble JSON
+        if (typeof payload === "string") {
+          console.warn(`[${traceId}] Doble serialización detectada, parseando de nuevo...`);
+          payload = JSON.parse(payload);
+        }
+      } catch (parseErr) {
+        console.error(`[${traceId}] Error parseando record.body`, parseErr);
         continue;
       }
 
-      const baseSalary =
-        reportResponses?.[0]?.baseSalary ? Number(reportResponses[0].baseSalary) : 0;
+      const { order, reportResponses } = payload;
+      if (!order) {
+        console.warn(`[${traceId}] No order en payload, skipping`);
+        continue;
+      }
+
+      const baseSalary = Number(reportResponses?.[0]?.baseSalary || 0);
       const maxCapacity = baseSalary * 0.35;
 
       let deudaMensualActual = 0;
-      if (Array.isArray(reportResponses)) {
-        for (const r of reportResponses) {
-          const status = (r.statusOrder || "").toString().toUpperCase();
-          if (status === "APROBADA" || status === "APPROVED") {
-            const monthlyRate = normalizeAnnualToMonthlyRate(Number(r.interestRate || 0));
-            deudaMensualActual += monthlyInstallment(
-              Number(r.amount),
-              monthlyRate,
-              Number(r.termMonths)
-            );
-          }
+      for (const r of reportResponses || []) {
+        const status = (r.statusOrder || "").toUpperCase();
+        if (status === "APROBADA" || status === "APPROVED") {
+          const monthlyRate = normalizeAnnualToMonthlyRate(Number(r.interestRate || 0));
+          deudaMensualActual += monthlyInstallment(
+            Number(r.amount),
+            monthlyRate,
+            Number(r.termMonths)
+          );
         }
       }
 
       const availableCapacity = maxCapacity - deudaMensualActual;
 
       let newAnnual = order.interestRate ?? null;
-      if (newAnnual == null && Array.isArray(reportResponses) && reportResponses.length > 0) {
+      if (newAnnual == null && reportResponses?.length) {
         const arrRates = reportResponses
-          .map((r) => Number(r.interestRate || 0))
-          .filter((x) => !isNaN(x));
-        newAnnual = arrRates.length ? arrRates.reduce((a, b) => a + b, 0) / arrRates.length : 0;
+          .map(r => Number(r.interestRate || 0))
+          .filter(x => !isNaN(x));
+        newAnnual = arrRates.length
+          ? arrRates.reduce((a, b) => a + b, 0) / arrRates.length
+          : 0;
       }
-      const newMonthlyRate = normalizeAnnualToMonthlyRate(Number(newAnnual || 0));
+
+      const newMonthlyRate = normalizeAnnualToMonthlyRate(newAnnual);
       const cuotaNuevo = monthlyInstallment(
         Number(order.amount),
         newMonthlyRate,
         Number(order.termMonths)
       );
 
-      let decision = "RECHAZADO";
+      let decision = "REJECTED";
       if (cuotaNuevo <= availableCapacity) {
-        if (baseSalary && Number(order.amount) > baseSalary * 5) {
-          decision = "REVISION_MANUAL";
-        } else {
-          decision = "APROBADO";
-        }
+        decision = Number(order.amount) > baseSalary * 5 ? "REVISION" : "APPROVED";
       }
 
       const { installment: cuotaCalc, plan: paymentPlan } =
         generateAmortizationPlan(Number(order.amount), newMonthlyRate, Number(order.termMonths));
 
-      const result = {
+      const resultPayload = {
         orderId: order.idOrder,
-        decision,
-        maxCapacity: Number(maxCapacity.toFixed(2)),
-        debtMonthly: Number(deudaMensualActual.toFixed(2)),
-        availableCapacity: Number(availableCapacity.toFixed(2)),
-        cuotaNuevo: Number(cuotaNuevo.toFixed(2)),
-        cuotaCalculada: Number(cuotaCalc.toFixed(2)),
-        paymentPlan,
+        decision
       };
+      
+      await sendToResultQueue(traceId, resultPayload);
+      console.log(`[${traceId}] Sent simplified result to RESULT queue: ${JSON.stringify(resultPayload)}`);
 
-      console.log(`[${traceId}] Calculation result: ${JSON.stringify(result)}`);
+      
+      const toEmail = order.emailAddress || reportResponses?.[0]?.email;
 
-      try {
-        await sendToResultQueue(traceId, { traceId, result, originalOrder: order });
-        console.log(`[${traceId}] Sent result to RESULT queue.`);
-      } catch (qErr) {
-        console.error(`[${traceId}] Failed to send to result queue:`, qErr);
-      }
+      if (toEmail) {
+        // Construcción de tabla HTML
+        const tableRows = paymentPlan.map(p => `
+          <tr>
+            <td>${p.month}</td>
+            <td>${p.capital}</td>
+            <td>${p.interest}</td>
+            <td>${p.installment}</td>
+            <td>${p.remainingBalance}</td>
+          </tr>
+        `).join("");
 
-      try {
-        const toEmail = order.emailAddress || reportResponses?.[0]?.email;
-        if (toEmail) {
-          const subject = `Result for your loan request ${order.idOrder ?? "(no-id)"}`;
-          let html = `<p>Decision: <b>${decision}</b></p>`;
-          html += `<p>Monthly installment (new loan): <b>${result.cuotaNuevo.toFixed(2)}</b></p>`;
-          html += `<table border="1" cellpadding="4">
-            <thead><tr><th>Month</th><th>Capital</th><th>Interest</th><th>Installment</th><th>Remaining</th></tr></thead><tbody>`;
-          for (const p of paymentPlan) {
-            html += `<tr><td>${p.month}</td><td>${p.capital}</td><td>${p.interest}</td><td>${p.installment}</td><td>${p.remainingBalance}</td></tr>`;
-          }
-          html += `</tbody></table>`;
-          await sendEmailSES(traceId, toEmail, subject, html);
-          console.log(`[${traceId}] Email sent to ${toEmail}`);
-        } else {
-          console.warn(`[${traceId}] No recipient email found, skipping SES send`);
-        }
-      } catch (sesErr) {
-        console.error(`[${traceId}] SES send error:`, sesErr);
+        const htmlBody = `
+          <h2>Resultado de tu capacidad de endeudamiento</h2>
+          <p><strong>Decision:</strong> ${decision}</p>
+          <p><strong>Monthly installment (new loan):</strong> ${cuotaNuevo.toFixed(2)}</p>
+
+          <table border="1" cellspacing="0" cellpadding="5">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Capital</th>
+                <th>Interest</th>
+                <th>Installment</th>
+                <th>Remaining</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        `;
+
+        await sendEmailSES(traceId, toEmail, `Result for ${order.idOrder}`, htmlBody);
+        console.log(`[${traceId}] Email sent to ${toEmail}`);
       }
 
       console.log(`[${traceId}] Finished processing record ${record.messageId}`);
-    } catch (err) {
-      console.error(`[${traceId}] Unhandled error processing record:`, err);
-      // throw err; // si quieres que SQS reprocesse
     }
+
+    return { statusCode: 200, body: "Processed successfully" };
+  } catch (err) {
+    console.error(err);
+    return { statusCode: 500, body: err.message };
   }
-  return { statusCode: 200 };
 };

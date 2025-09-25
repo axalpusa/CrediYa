@@ -20,6 +20,9 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import static constants.Constants.INVALID_CREDENTIALS;
+import static constants.Constants.REQUEST_INVALID;
+
 @Configuration
 public class AuthOpenApi {
 
@@ -51,8 +54,8 @@ public class AuthOpenApi {
                                                     schema = @Schema(implementation = AuthResponseDTO.class)
                                             )
                                     ),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid"),
-                                    @ApiResponse(responseCode = "401", description = "Invalid credentials")
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID),
+                                    @ApiResponse(responseCode = "401", description = INVALID_CREDENTIALS)
                             }
                     )
             )

@@ -12,7 +12,7 @@ import co.com.pragma.model.auth.Auth;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.authentication.AuthUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.UnauthorizedException;
+import exceptions.UnauthorizedPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +27,7 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
+import static constants.Constants.INVALID_CREDENTIALS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -129,7 +130,7 @@ class RouterAuthHandlerTest {
                 eq ( "axalpusa" ),
                 any ( ),
                 any ( )
-        ) ).thenReturn ( Mono.error ( new UnauthorizedException ( "Invalid credentials" ) ) );
+        ) ).thenReturn ( Mono.error ( new UnauthorizedPragmaException ( INVALID_CREDENTIALS ) ) );
 
         when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
                 .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
@@ -143,7 +144,7 @@ class RouterAuthHandlerTest {
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Unauthorized")
-                .jsonPath("$.details").isEqualTo("Invalid credentials");
+                .jsonPath("$.details").isEqualTo(INVALID_CREDENTIALS);
     }
 
     @Test
@@ -153,10 +154,10 @@ class RouterAuthHandlerTest {
                 eq("axalpusa"),
                 any(),
                 any()
-        )).thenReturn(Mono.error(new UnauthorizedException("Invalid credentials")));
+        )).thenReturn(Mono.error(new UnauthorizedPragmaException (INVALID_CREDENTIALS)));
 
         assertThrows(
-                UnauthorizedException.class,
+                UnauthorizedPragmaException.class,
                 () -> authUseCase.login(
                         "axalpusa@gmail.com",
                         "axalpusa",

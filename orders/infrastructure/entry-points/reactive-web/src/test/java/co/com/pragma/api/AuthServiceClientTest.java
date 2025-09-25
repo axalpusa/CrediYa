@@ -19,16 +19,16 @@ class AuthServiceClientTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        mockWebServer = new MockWebServer ( );
-        mockWebServer.start ( );
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
 
-        String baseUrl = mockWebServer.url ( "/" ).toString ( );
-        authServiceClient = new AuthServiceClient ( WebClient.builder ( ), baseUrl );
+        String baseUrl = mockWebServer.url("/").toString();
+        authServiceClient = new AuthServiceClient(WebClient.builder(), baseUrl);
     }
 
     @AfterEach
     void tearDown() throws IOException {
-        mockWebServer.shutdown ( );
+        mockWebServer.shutdown();
     }
 
     @Test
@@ -58,5 +58,29 @@ class AuthServiceClientTest {
                 .verifyComplete();
     }
 
+    @Test
+    void getUserByEmailAddress_shouldReturnUser() {
+        String idUser = UUID.randomUUID().toString();
+        String email = "user@test.com";
 
+        String json = """
+            {
+              "idUser": "%s",
+              "firstName": "Axel",
+              "lastName": "Puertas",
+              "emailAddress": "%s"
+            }
+            """.formatted(idUser, email);
+
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(json)
+                .addHeader("Content-Type", "application/json"));
+
+        StepVerifier.create(authServiceClient.getUserByEmailAddress(email, "fake-token"))
+                .expectNextMatches(user ->
+                                user.getFirstName().equals("Axel") &&
+                                user.getLastName().equals("Puertas") &&
+                                user.getEmailAddress().equals(email))
+                .verifyComplete();
+    }
 }

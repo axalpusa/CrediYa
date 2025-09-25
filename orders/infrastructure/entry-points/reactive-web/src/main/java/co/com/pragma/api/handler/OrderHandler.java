@@ -51,7 +51,6 @@ public class OrderHandler {
                                         ) ) )
                                         .flatMap ( dto -> {
                                             Order order = orderMapper.toModel ( dto );
-                                           // order.setIdStatus ( StatusEnum.REVISION.getId ( ) );
                                             return orderUseCase.saveOrder ( order,authUser.getToken());
                                         } )
                                         .flatMap ( savedOrder ->
@@ -85,20 +84,6 @@ public class OrderHandler {
                                         .contentType(MediaType.APPLICATION_JSON)
                                         .bodyValue(list))
                 );
-       /* return validateUserToken ( request, RolEnum.ASSESSOR.getId ( ) )
-                .flatMap ( authUser ->
-                        orderUseCase.findPendingOrders ( filterStatus, filterEmail, page, size )
-                                .flatMap ( order ->
-                                        authServiceClient.getUserByEmailAddress ( authUser.getToken ( ), order.getEmail ( ) )
-                                                .onErrorResume ( WebClientResponseException.NotFound.class, ex -> Mono.empty ( ) )
-                                                .map ( user -> mapToReportDTO ( order, user ) )
-                                )
-                                .collectList ( )
-                )
-                .flatMap ( list -> ServerResponse.ok ( )
-                        .contentType ( MediaType.APPLICATION_JSON )
-                        .bodyValue ( list )
-                );*/
     }
 
 
@@ -152,7 +137,6 @@ public class OrderHandler {
         );
     }
 
-
     public Mono < ServerResponse > listenGetAllOrders(ServerRequest request) {
         return ServerResponse.ok ( )
                 .contentType ( MediaType.TEXT_EVENT_STREAM )
@@ -172,7 +156,6 @@ public class OrderHandler {
     }
 
     public Mono < ServerResponse > listenDeleteOrder(ServerRequest request) {
-
         return Mono.fromCallable ( () -> request.pathVariable ( "idOrder" ) )
                 .map ( String::trim )
                 .filter ( item -> !item.isBlank ( ) )

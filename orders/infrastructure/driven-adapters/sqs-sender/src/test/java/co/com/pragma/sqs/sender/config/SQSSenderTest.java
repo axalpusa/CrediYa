@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -169,41 +170,59 @@ public class SQSSenderTest {
         assertThat ( request.messageBody ( ) ).isEqualTo ( "calculate-message" );
     }
 
-   /* @Test
-    void sendCalculateCapacity_shouldCompleteSuccessfully() {
-        CalculateCapacity dto = new CalculateCapacity ( );
-        Order order = new Order ( );
-        order.setIdOrder ( UUID.randomUUID ( ) );
-        order.setEmailAddress ( "test@mail.com" );
-        dto.setOrder ( order );
+    @Test
+    void sendCalculateCapacity_shouldComplete_whenValidPayload() {
+        String expectedMessageId = "msg-123";
+        SendMessageResponse response = SendMessageResponse.builder()
+                .messageId(expectedMessageId)
+                .build();
 
-        SendMessageResponse response = SendMessageResponse.builder ( ).messageId ( "msg123" ).build ( );
-        when ( sqsClient.sendMessage ( any ( SendMessageRequest.class ) ) )
-                .thenReturn ( CompletableFuture.completedFuture ( response ) );
+        when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+                .thenReturn(CompletableFuture.completedFuture(response));
 
-        StepVerifier.create ( sqsSender.sendCalculateCapacity ( dto ) )
-                .verifyComplete ( );
+        Order order = Order.builder()
+                .idOrder(UUID.randomUUID())
+                .amount(BigDecimal.valueOf(5000))
+                .emailAddress("test@mail.com")
+                .idStatus(StatusEnum.APPROVED.getId())
+                .build();
 
-        ArgumentCaptor < SendMessageRequest > captor = ArgumentCaptor.forClass ( SendMessageRequest.class );
-        verify ( sqsClient ).sendMessage ( captor.capture ( ) );
-        assertThat ( captor.getValue ( ).queueUrl ( ) ).isEqualTo ( properties.calculateCapacityQueueUrl ( ) );
-    }*/
-/*
+        CalculateCapacity calculateCapacity = new CalculateCapacity(order, List.of());
+
+        StepVerifier.create(sqsSender.sendCalculateCapacity(calculateCapacity))
+                .verifyComplete();
+
+        ArgumentCaptor<SendMessageRequest> captor = ArgumentCaptor.forClass(SendMessageRequest.class);
+        verify(sqsClient).sendMessage(captor.capture());
+
+        SendMessageRequest request = captor.getValue();
+        assertThat(request.queueUrl()).isEqualTo(properties.calculateCapacityQueueUrl());
+        assertThat(request.messageBody()).contains("order");
+    }
+
     @Test
     void sendCalculateCapacity_shouldError_whenJsonFails() throws Exception {
-        ObjectMapper brokenMapper = mock ( ObjectMapper.class );
-        when ( brokenMapper.writeValueAsString ( any ( ) ) ).thenThrow ( new RuntimeException ( "JSON error" ) );
+        Order order = Order.builder()
+                .idOrder(UUID.randomUUID())
+                .amount(BigDecimal.valueOf(2000))
+                .emailAddress("fail@mail.com")
+                .idStatus(StatusEnum.REJECTED.getId())
+                .build();
 
-        SQSSender brokenSender = new SQSSender ( properties, sqsClient, brokenMapper );
-        CalculateCapacity dto = new CalculateCapacity ( );
-        dto.setOrder ( new Order ( ) );
+        CalculateCapacity calculateCapacity = new CalculateCapacity(order, List.of());
 
-        StepVerifier.create ( brokenSender.sendCalculateCapacity ( dto ) )
-                .expectError ( RuntimeException.class )
-                .verify ( );
+        ObjectMapper mockMapper = mock(ObjectMapper.class);
+        when(mockMapper.writeValueAsString(any())).thenThrow(new RuntimeException("JSON error"));
 
-        verify ( sqsClient, never ( ) ).sendMessage ( any ( SendMessageRequest.class ) );
-    }*/
+        SQSSender brokenSender = new SQSSender(properties, sqsClient, mockMapper);
+
+        StepVerifier.create(brokenSender.sendCalculateCapacity(calculateCapacity))
+                .expectError(RuntimeException.class)
+                .verify();
+
+        verify(sqsClient, never()).sendMessage(any(SendMessageRequest.class));
+    }
+
 
 
 }

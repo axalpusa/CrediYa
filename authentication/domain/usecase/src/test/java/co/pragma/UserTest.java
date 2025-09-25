@@ -3,7 +3,7 @@ package co.pragma;
 import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
 import co.com.pragma.usecase.user.UserUseCase;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,6 +15,13 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import static constants.Constants.ADDRESS_REQUIRED;
+import static constants.Constants.BASE_SALARY_REQUIRED;
+import static constants.Constants.DOCUMENT_REQUIRED;
+import static constants.Constants.EMAIL_DUPLICATED;
+import static constants.Constants.EMAIL_REQUIRED;
+import static constants.Constants.FIRST_NAME_REQUIRED;
+import static constants.Constants.LAST_NAME_REQUIRED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -69,7 +76,7 @@ public class UserTest {
         when ( userRepository.findById ( id ) ).thenReturn ( Mono.empty ( ) );
 
         StepVerifier.create ( userUseCase.getUserById ( id ) )
-                .expectErrorMatches ( throwable -> throwable instanceof ValidationException &&
+                .expectErrorMatches ( throwable -> throwable instanceof ValidationPragmaException &&
                         throwable.getMessage ( ).contains ( id.toString ( ) ) )
                 .verify ( );
 
@@ -112,8 +119,8 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( ).contains ( "Email address duplicate." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( ).contains ( EMAIL_DUPLICATED );
                 } )
                 .verify ( );
 
@@ -210,9 +217,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "Base salary must be between 0 and 15,000,000." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( BASE_SALARY_REQUIRED );
                 } )
                 .verify ( );
 
@@ -231,9 +238,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "Base salary must be between 0 and 15,000,000." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( BASE_SALARY_REQUIRED );
                 } )
                 .verify ( );
 
@@ -252,9 +259,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "First name is required." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( FIRST_NAME_REQUIRED );
                 } )
                 .verify ( );
 
@@ -273,9 +280,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "Last name is required." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( LAST_NAME_REQUIRED );
                 } )
                 .verify ( );
 
@@ -294,9 +301,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "Email address is required." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( EMAIL_REQUIRED );
                 } )
                 .verify ( );
 
@@ -315,9 +322,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "Address is required." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( ADDRESS_REQUIRED );
                 } )
                 .verify ( );
 
@@ -336,9 +343,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "Document ID is required." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( DOCUMENT_REQUIRED );
                 } )
                 .verify ( );
 
@@ -357,9 +364,9 @@ public class UserTest {
 
         StepVerifier.create ( userUseCase.saveUser ( user ) )
                 .expectErrorSatisfies ( e -> {
-                    assert e instanceof ValidationException;
-                    assert ((ValidationException) e).getErrors ( )
-                            .contains ( "Base salary must be between 0 and 15,000,000." );
+                    assert e instanceof ValidationPragmaException;
+                    assert ((ValidationPragmaException) e).getErrors ( )
+                            .contains ( BASE_SALARY_REQUIRED );
                 } )
                 .verify ( );
 
@@ -442,15 +449,10 @@ public class UserTest {
 
         User other = new User ( );
         other.setFirstName ( "Alex" );
-        other.setEmailAddress ( "new@example.com" );
-        other.setBaseSalary ( BigDecimal.valueOf ( 7000 ) );
 
         original.merge ( other );
 
         assertThat ( original.getFirstName ( ) ).isEqualTo ( "Alex" );
-        assertThat ( original.getLastName ( ) ).isEqualTo ( "Puertas" );
-        assertThat ( original.getEmailAddress ( ) ).isEqualTo ( "new@example.com" );
-        assertThat ( original.getBaseSalary ( ) ).isEqualByComparingTo ( BigDecimal.valueOf ( 7000 ) );
         assertThat ( original.getIdUser ( ) ).isEqualTo ( userId );
     }
 
@@ -500,13 +502,6 @@ public class UserTest {
         assertEquals("Alexandre@example.com".toLowerCase(), original.getEmailAddress().toLowerCase());
         assertEquals(new BigDecimal("6000"), original.getBaseSalary());
         assertEquals(role2, original.getIdRol());
-
-        assertEquals("Puertas", original.getLastName());
-        assertEquals("Piura", original.getAddress());
-        assertEquals("48295730", original.getDocumentId());
-        assertEquals(LocalDate.of(1995, 1, 1), original.getBirthDate());
-        assertEquals("973157252", original.getPhoneNumber());
-        assertEquals("1234", original.getPassword());
     }
 
     @Test
@@ -520,4 +515,37 @@ public class UserTest {
 
         assertEquals("Axel", original.getFirstName());
     }
+    @Test
+    void shouldMergeAllNonNullFields() {
+        User original = new User();
+        original.setFirstName("Axel");
+        original.setLastName("Puertas");
+        original.setEmailAddress("axel@old.com");
+        original.setAddress("Old address");
+        original.setDocumentId("123");
+        original.setBirthDate(LocalDate.of(1995, 1, 1));
+        original.setPhoneNumber("111111111");
+        original.setPassword("oldPass");
+
+        User updates = new User();
+        updates.setFirstName("Alexandre");
+        updates.setEmailAddress("axel@new.com");
+        updates.setAddress("New address");
+        updates.setDocumentId("456");
+        updates.setBirthDate(LocalDate.of(2000, 12, 25));
+        updates.setPhoneNumber("999999999");
+        updates.setPassword("newPass");
+
+        original.merge(updates);
+
+        assertEquals("Alexandre", original.getFirstName());
+        assertEquals("Puertas", original.getLastName());
+        assertEquals("axel@new.com", original.getEmailAddress());
+        assertEquals("New address", original.getAddress());
+        assertEquals("456", original.getDocumentId());
+        assertEquals(LocalDate.of(2000, 12, 25), original.getBirthDate());
+        assertEquals("999999999", original.getPhoneNumber());
+        assertEquals("newPass", original.getPassword());
+    }
+
 }

@@ -3,17 +3,15 @@ package co.com.pragma.api;
 import co.com.pragma.api.config.ApiPaths;
 import co.com.pragma.api.config.GlobalErrorHandler;
 import co.com.pragma.api.dto.request.UserRequestDTO;
-import co.com.pragma.api.dto.response.RolResponseDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.handler.UserHandler;
 import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.api.routerrest.UserRouterRest;
-import co.com.pragma.model.rol.Rol;
 import co.com.pragma.model.user.User;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +30,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+import static constants.Constants.EMAIL_DUPLICATED;
+import static constants.Constants.FIRST_NAME_REQUIRED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.lenient;
@@ -151,7 +151,7 @@ class RouterUserHandlerTest {
         User invalidUser = buildModelFromReq ( req );
         when ( userMapper.toModel ( any ( UserRequestDTO.class ) ) ).thenReturn ( invalidUser );
         when ( userUseCase.saveUser ( any ( User.class ) ) )
-                .thenReturn ( Mono.error ( new ValidationException ( List.of ( "First name is required." ) ) ) );
+                .thenReturn ( Mono.error ( new ValidationPragmaException ( List.of ( FIRST_NAME_REQUIRED ) ) ) );
         when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
                 .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
         webTestClient.post ( )
@@ -161,7 +161,7 @@ class RouterUserHandlerTest {
                 .exchange ( )
                 .expectStatus ( ).isBadRequest ( )
                 .expectBody ( )
-                .jsonPath ( "$.details" ).isEqualTo ( "First name is required." );
+                .jsonPath ( "$.details" ).isEqualTo ( FIRST_NAME_REQUIRED );
     }
 
     @Test
@@ -172,7 +172,7 @@ class RouterUserHandlerTest {
 
         when ( userMapper.toModel ( any ( UserRequestDTO.class ) ) ).thenReturn ( toSave );
         when ( userUseCase.saveUser ( any ( User.class ) ) )
-                .thenReturn ( Mono.error ( new ValidationException ( List.of ( "Email address duplicate." ) ) ) );
+                .thenReturn ( Mono.error ( new ValidationPragmaException ( List.of ( EMAIL_DUPLICATED ) ) ) );
         when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
                 .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
         webTestClient.post ( )
@@ -182,7 +182,7 @@ class RouterUserHandlerTest {
                 .exchange ( )
                 .expectStatus ( ).isBadRequest ( )
                 .expectBody ( )
-                .jsonPath ( "$.details" ).isEqualTo ( "Email address duplicate." );
+                .jsonPath ( "$.details" ).isEqualTo ( EMAIL_DUPLICATED );
     }
 
     @Test

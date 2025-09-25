@@ -3,7 +3,7 @@ package co.pragma;
 import co.com.pragma.model.rol.Rol;
 import co.com.pragma.model.rol.gateways.RolRepository;
 import co.com.pragma.usecase.rol.RolUseCase;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -53,7 +53,7 @@ public class RolTest {
         when ( rolRepository.findById ( id ) ).thenReturn ( Mono.empty ( ) );
 
         StepVerifier.create ( rolUseCase.getRolById ( id ) )
-                .expectErrorMatches ( throwable -> throwable instanceof ValidationException &&
+                .expectErrorMatches ( throwable -> throwable instanceof ValidationPragmaException &&
                         throwable.getMessage ( ).contains ( id.toString ( ) ) )
                 .verify ( );
 

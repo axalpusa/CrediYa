@@ -5,8 +5,8 @@ import co.com.pragma.api.dto.response.AuthResponseDTO;
 import co.com.pragma.api.jwt.JwtService;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.authentication.AuthUseCase;
-import exceptions.UnauthorizedException;
-import exceptions.ValidationException;
+import exceptions.UnauthorizedPragmaException;
+import exceptions.ValidationPragmaException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -18,6 +18,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
+
+import static constants.Constants.REQUEST_EMPTY;
 
 @Slf4j
 @Component
@@ -32,7 +34,7 @@ public class AuthHandler {
     public Mono < ServerResponse > login(ServerRequest request) {
         return transactionalAdapter.executeInTransaction (
                 request.bodyToMono ( AuthRequestDTO.class )
-                        .switchIfEmpty ( Mono.error ( new RuntimeException ( "Request body cannot be empty" ) ) )
+                        .switchIfEmpty ( Mono.error ( new RuntimeException ( REQUEST_EMPTY ) ) )
                         .flatMap ( dto -> authUseCase.login (
                                 dto.getEmail ( ),
                                 dto.getPassword ( ),
@@ -49,13 +51,13 @@ public class AuthHandler {
         String authHeader = request.headers ( ).firstHeader ( "Authorization" );
 
         if ( authHeader == null || !authHeader.startsWith ( "Bearer " ) ) {
-            throw new ValidationException ( List.of ( "Missing or invalid Authorization header" ) );
+            throw new ValidationPragmaException ( List.of ( "Missing or invalid Authorization header" ) );
         }
 
         String token = authHeader.substring ( 7 );
 
         if ( !jwtService.isTokenValid ( token ) ) {
-            throw new UnauthorizedException ( "Invalid or expired token" );
+            throw new UnauthorizedPragmaException ( "Invalid or expired token" );
         }
 
         UUID idUser = jwtService.extractUserId ( token );

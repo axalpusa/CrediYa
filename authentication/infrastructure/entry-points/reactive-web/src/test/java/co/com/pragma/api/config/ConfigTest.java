@@ -9,7 +9,7 @@ import co.com.pragma.api.mapper.UserMapperDTO;
 import co.com.pragma.api.routerrest.UserRouterRest;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -136,7 +136,7 @@ class ConfigTest {
         List<String> errors = List.of("Error 1", "Error 2");
         String message = "Validation failed";
 
-        ValidationException ex = new ValidationException(message, errors);
+        ValidationPragmaException ex = new ValidationPragmaException (message, errors);
 
         assertThat(ex.getMessage()).isEqualTo(message);
         assertThat(ex.getErrors()).containsExactly("Error 1", "Error 2");
@@ -146,7 +146,7 @@ class ConfigTest {
     void constructor_withErrorsOnly_shouldGenerateMessage() {
         List <String> errors = List.of("Error A", "Error B");
 
-        ValidationException ex = new ValidationException (errors);
+        ValidationPragmaException ex = new ValidationPragmaException (errors);
 
         assertThat(ex.getMessage()).isEqualTo("Error A, Error B");
         assertThat(ex.getErrors()).containsExactly("Error A", "Error B");
@@ -157,7 +157,7 @@ class ConfigTest {
         List<String> errors = List.of("Something went wrong");
         Throwable cause = new RuntimeException("Cause");
 
-        ValidationException ex = new ValidationException(errors, cause);
+        ValidationPragmaException ex = new ValidationPragmaException (errors, cause);
 
         assertThat(ex.getMessage()).isEqualTo("Something went wrong");
         assertThat(ex.getErrors()).containsExactly("Something went wrong");

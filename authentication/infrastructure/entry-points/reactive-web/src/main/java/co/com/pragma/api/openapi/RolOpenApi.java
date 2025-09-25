@@ -21,6 +21,11 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import static constants.Constants.REQUEST_INVALID;
+import static constants.Constants.ROL_FOUND;
+import static constants.Constants.ROL_NOT_FOUND;
+import static constants.Constants.SUCCESSFUL;
+
 @Configuration
 public class RolOpenApi {
 
@@ -44,8 +49,8 @@ public class RolOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(responseCode = "201", description = SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID)
                             }
                     )
             ),
@@ -81,8 +86,8 @@ public class RolOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "Rol found"),
-                                    @ApiResponse(responseCode = "404", description = "Rol not found")
+                                    @ApiResponse(responseCode = "200", description = ROL_FOUND),
+                                    @ApiResponse(responseCode = "404", description = ROL_NOT_FOUND)
                             }
                     )
             )

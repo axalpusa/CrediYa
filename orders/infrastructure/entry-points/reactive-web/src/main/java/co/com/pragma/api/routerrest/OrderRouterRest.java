@@ -23,7 +23,6 @@ public class OrderRouterRest {
                 .GET ( ApiPaths.REPORT, handler::listenReportOrder )
                 .GET ( ApiPaths.ORDERALL, handler::listenGetAllOrders )
                 .GET ( ApiPaths.ORDERBYID, handler::listenGetOrderById )
-
                 .build ( );
     }
 }

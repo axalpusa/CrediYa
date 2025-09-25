@@ -12,7 +12,6 @@ import co.com.pragma.model.user.gateways.UserRepository;
 import enums.StatusEnum;
 import exceptions.ValidationPragmaException;
 import lombok.AllArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -37,7 +36,7 @@ public class OrderUseCase {
                 .flatMap ( typeLoan -> {
                     if ( order.getAmount ( ).compareTo ( typeLoan.getMinimumAmount ( ) ) < 0 ||
                             order.getAmount ( ).compareTo ( typeLoan.getMaximumAmount ( ) ) > 0 ) {
-                        return Mono.error ( new IllegalArgumentException (AMOUNT_OF_RANGE ) );
+                        return Mono.error ( new IllegalArgumentException ( AMOUNT_OF_RANGE ) );
                     }
                     order.setIdStatus ( StatusEnum.REVISION.getId ( ) );
                     if ( typeLoan.getAutomaticValidation ( ) ) {
@@ -48,38 +47,38 @@ public class OrderUseCase {
                 } );
     }
 
-    private Mono<Order> sendToCapacityLambda(Order order, String token) {
-        return orderRepository.save(order)
-                .flatMap(savedOrder -> {
-                    return findPendingOrdersWithUserData(
-                            StatusEnum.APPROVED.getId(),
-                            savedOrder.getEmailAddress(),
+    private Mono < Order > sendToCapacityLambda(Order order, String token) {
+        return orderRepository.save ( order )
+                .flatMap ( savedOrder -> {
+                    return findPendingOrdersWithUserData (
+                            StatusEnum.APPROVED.getId ( ),
+                            savedOrder.getEmailAddress ( ),
                             0, 10, token
                     )
-                            .collectList()
-                            .map(ordersList -> {
-                                CalculateCapacity dto = new CalculateCapacity();
-                                dto.setOrder(savedOrder);
-                                dto.setReportResponses(ordersList);
+                            .collectList ( )
+                            .map ( ordersList -> {
+                                CalculateCapacity dto = new CalculateCapacity ( );
+                                dto.setOrder ( savedOrder );
+                                dto.setReportResponses ( ordersList );
 
                                 return dto;
-                            })
-                            .flatMap(notificationRepository::sendCalculateCapacity)
-                            .thenReturn(savedOrder);
-                });
+                            } )
+                            .flatMap ( notificationRepository::sendCalculateCapacity )
+                            .thenReturn ( savedOrder );
+                } );
     }
 
-    public Flux<ReportResponse> findPendingOrdersWithUserData(UUID filterStatus,
-                                                              String filterEmail,
-                                                              int page,
-                                                              int size,
-                                                              String token) {
+    public Flux < ReportResponse > findPendingOrdersWithUserData(UUID filterStatus,
+                                                                 String filterEmail,
+                                                                 int page,
+                                                                 int size,
+                                                                 String token) {
 
-        return orderRepository.findPendingOrders(filterStatus, filterEmail, page, size)
-                .flatMap(order ->
-                        userRepository.findByEmail(order.getEmail(), token)
-                                .onErrorResume(e -> Mono.empty())
-                                .map(user -> mapToReportDTO(order, user))
+        return orderRepository.findPendingOrders ( filterStatus, filterEmail, page, size )
+                .flatMap ( order ->
+                        userRepository.findByEmail ( order.getEmail ( ), token )
+                                .onErrorResume ( e -> Mono.empty ( ) )
+                                .map ( user -> mapToReportDTO ( order, user ) )
                 );
     }
 
@@ -100,11 +99,11 @@ public class OrderUseCase {
     private Mono < Void > validateOrder(Order order) {
         List < String > errors = new ArrayList <> ( );
 
-        if ( isBlank ( order.getDocumentId ( ) ) ) errors.add ( "Document id is required." );
-        if ( isBlank ( order.getEmailAddress ( ) ) ) errors.add ( "Email address is required." );
-        if ( order.getTermMonths ( ) == null || order.getTermMonths ( ) < 0 ) errors.add ( "Term months is required." );
+        if ( isBlank ( order.getDocumentId ( ) ) ) errors.add ( DOCUMENT_REQUIRED );
+        if ( isBlank ( order.getEmailAddress ( ) ) ) errors.add ( EMAIL_REQUIRED );
+        if ( order.getTermMonths ( ) == null || order.getTermMonths ( ) < 0 ) errors.add ( TERM_REQUIRED );
         if ( order.getAmount ( ) == null || order.getAmount ( ).doubleValue ( ) < 0 )
-            errors.add ( "Amount is required" );
+            errors.add ( AMOUNT_REQUIRED );
 
         return errors.isEmpty ( ) ? Mono.empty ( ) : Mono.error ( new ValidationPragmaException ( errors ) );
     }

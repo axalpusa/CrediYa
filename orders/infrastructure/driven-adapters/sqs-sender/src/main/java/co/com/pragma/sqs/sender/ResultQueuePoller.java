@@ -58,14 +58,11 @@ public class ResultQueuePoller {
     private void processMessage(Message message) {
         try {
             log.info ( "Procesando mensaje: {}", message.body ( ) );
-
             CapacityResponse dto = objectMapper.readValue ( message.body ( ), CapacityResponse.class );
-
-            log.info ( "Resultado cálculo recibido: {}", dto.getResult ( ) );
-
-            orderRepository.findById ( UUID.fromString ( dto.getResult ( ).getOrderId ( ) ) )
+            log.info ( "Resultado cálculo recibido: orderId={}, decision={}", dto.getOrderId ( ), dto.getDecision ( ) );
+            orderRepository.findById ( (dto.getOrderId ( )) )
                     .flatMap ( order -> {
-                        UUID idStatus = StatusEnum.getIdFromName ( dto.getResult ( ).getDecision ( ) );
+                        UUID idStatus = StatusEnum.getIdFromName ( dto.getDecision ( ) );
                         order.setIdStatus ( idStatus );
                         return orderRepository.save ( order );
                     } )
@@ -73,16 +70,14 @@ public class ResultQueuePoller {
                         log.info ( "Orden {} actualizada en la BD", saved.getIdOrder ( ) );
                         deleteMessage ( message );
                     } )
-                    .doOnError ( err -> log.error ( "Error actualizando orden {}", dto.getResult ( ).getOrderId ( ), err ) )
+                    .doOnError ( err -> log.error ( "Error actualizando orden {}", dto.getOrderId ( ), err ) )
                     .subscribe ( );
-
-
-            deleteMessage ( message );
 
         } catch (Exception e) {
             log.error ( "Error procesando mensaje", e );
         }
     }
+
 
     private void deleteMessage(Message message) {
         DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder ( )

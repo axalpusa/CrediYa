@@ -2,13 +2,15 @@ package co.com.pragma.usecase.rol;
 
 import co.com.pragma.model.rol.Rol;
 import co.com.pragma.model.rol.gateways.RolRepository;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
+
+import static constants.Constants.ROL_NOT_FOUND;
 
 @RequiredArgsConstructor
 public class RolUseCase {
@@ -30,8 +32,8 @@ public class RolUseCase {
 
     public Mono < Rol > getRolById(UUID id) {
         return rolRepository.findById ( id )
-                .switchIfEmpty ( Mono.error ( new ValidationException (
-                        List.of ( "Rol not found: " + id )
+                .switchIfEmpty ( Mono.error ( new ValidationPragmaException (
+                        List.of ( ROL_NOT_FOUND + id )
                 ) ) );
     }
 

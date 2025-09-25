@@ -12,6 +12,8 @@ import reactor.test.StepVerifier;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
+import static constants.Constants.INVALID_CREDENTIALS;
+import static constants.Constants.USER_NOT_FOUND;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +65,7 @@ public class AuthTest {
         StepVerifier.create ( authUseCase.login ( email, password,
                         (u, r) -> "token", (p, s) -> true ) )
                 .expectErrorMatches ( throwable -> throwable instanceof RuntimeException &&
-                        throwable.getMessage ( ).equals ( "User not found" ) )
+                        throwable.getMessage ( ).equals ( USER_NOT_FOUND ) )
                 .verify ( );
 
         verify ( userUseCase ).findByEmailAddress ( email );
@@ -88,7 +90,7 @@ public class AuthTest {
 
         StepVerifier.create ( authUseCase.login ( email, "wrongPassword", (u, r) -> "token", passwordMatches ) )
                 .expectErrorMatches ( throwable -> throwable instanceof RuntimeException &&
-                        throwable.getMessage ( ).equals ( "Invalid credentials" ) )
+                        throwable.getMessage ( ).equals ( INVALID_CREDENTIALS ) )
                 .verify ( );
 
         verify ( userUseCase ).findByEmailAddress ( email );

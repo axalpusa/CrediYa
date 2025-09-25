@@ -6,6 +6,7 @@ import co.com.pragma.model.order.Order;
 import co.com.pragma.model.order.gateways.OrderRepository;
 import co.com.pragma.model.typeloan.TypeLoan;
 import co.com.pragma.model.typeloan.gateways.TypeLoanRepository;
+import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
 import constants.Constants;
 import exceptions.ValidationPragmaException;
@@ -387,6 +388,65 @@ public class OrderTest {
 
         verify(orderRepository).save(order);
         verify(notificationRepository).sendCalculateCapacity(Mockito.any());
+    }
+    @Test
+    void findPendingOrdersWithUserData_shouldReturnReportResponse_whenUserFound() {
+        UUID filterStatus = UUID.randomUUID();
+        String filterEmail = "user@test.com";
+        String token = "fake-token";
+
+        OrderPending pending = new OrderPending();
+        pending.setStatusOrder("REVISION");
+        pending.setAmount(BigDecimal.valueOf(3000));
+        pending.setEmail("user@test.com");
+        pending.setTypeLoan("Personal Loan");
+        pending.setInterestRate(BigDecimal.valueOf(5.0));
+        pending.setTermMonths(12);
+        pending.setTotalMonthlyDebtApprovedRequests(BigDecimal.valueOf(1000));
+
+        User user = new User();
+        user.setEmailAddress("user@test.com");
+        user.setFirstName("John");
+        user.setLastName("Doe");
+        user.setBaseSalary(BigDecimal.valueOf(2000));
+
+        when(orderRepository.findPendingOrders(filterStatus, filterEmail, 0, 10))
+                .thenReturn(Flux.just(pending));
+        when(userRepository.findByEmail("user@test.com", token)).thenReturn(Mono.just(user));
+
+        StepVerifier.create(orderUseCase.findPendingOrdersWithUserData(filterStatus, filterEmail, 0, 10, token))
+                .assertNext(report -> {
+                    assertThat(report.getEmail()).isEqualTo("user@test.com");
+                    assertThat(report.getName()).isEqualTo("John Doe");
+                    assertThat(report.getBaseSalary()).isEqualTo(BigDecimal.valueOf(2000));
+                    assertThat(report.getStatusOrder()).isEqualTo("REVISION");
+                    assertThat(report.getAmount()).isEqualTo(BigDecimal.valueOf(3000));
+                    assertThat(report.getTypeLoan()).isEqualTo("Personal Loan");
+                    assertThat(report.getInterestRate()).isEqualTo(BigDecimal.valueOf(5.0));
+                    assertThat(report.getTermMonths()).isEqualTo(12);
+                    assertThat(report.getTotalMonthlyDebtApprovedRequests()).isEqualTo(BigDecimal.valueOf(1000));
+                })
+                .verifyComplete();
+
+        verify(orderRepository).findPendingOrders(filterStatus, filterEmail, 0, 10);
+        verify(userRepository).findByEmail("user@test.com", token);
+    }
+
+    @Test
+    void findPendingOrdersWithUserData_shouldSkipOrder_whenUserNotFound() {
+        UUID filterStatus = UUID.randomUUID();
+        String filterEmail = "missing@test.com";
+        String token = "fake-token";
+
+        OrderPending pending = new OrderPending();
+        pending.setEmail("missing@test.com");
+
+        when(orderRepository.findPendingOrders(filterStatus, filterEmail, 0, 10))
+                .thenReturn(Flux.just(pending));
+        when(userRepository.findByEmail("missing@test.com", token)).thenReturn(Mono.error(new RuntimeException("User not found")));
+
+        StepVerifier.create(orderUseCase.findPendingOrdersWithUserData(filterStatus, filterEmail, 0, 10, token))
+                .verifyComplete();
     }
 
 }

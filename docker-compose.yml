@@ -49,7 +49,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=root
       - ORDER_SERVICE_URL=http://orders:8091
       - AUTH_SERVICE_URL=http://authentication:8090
-
+ 
     depends_on:
       - db_orders
       - authentication

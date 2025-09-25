@@ -8,10 +8,9 @@ import co.com.pragma.model.rol.Rol;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.rol.RolUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.NotFoundException;
-import exceptions.ValidationException;
+import exceptions.NotFoundPragmaException;
+import exceptions.ValidationPragmaException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -20,8 +19,10 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+
+import static constants.Constants.REQUEST_EMPTY;
+import static constants.Constants.ROL_NOT_FOUND;
 
 @Component
 @RequiredArgsConstructor
@@ -35,8 +36,8 @@ public class RolHandler {
     public Mono < ServerResponse > listenSaveRol(ServerRequest request) {
         return transactionalAdapter.executeInTransaction (
                 request.bodyToMono ( RolRequestDTO.class )
-                        .switchIfEmpty ( Mono.error ( new ValidationException (
-                                List.of ( "Request body cannot be empty" )
+                        .switchIfEmpty ( Mono.error ( new ValidationPragmaException (
+                                List.of ( REQUEST_EMPTY )
                         ) ) )
                         .flatMap ( dto -> Mono.justOrEmpty ( rolMapper.toModel ( dto ) ) )
                         .flatMap ( rolUseCase::saveRol )
@@ -50,7 +51,7 @@ public class RolHandler {
     public Mono<ServerResponse> listenUpdateRol(ServerRequest request) {
         return request.bodyToMono(RolResponseDTO.class)
                 .flatMap(dto -> rolUseCase.getRolById (dto.getIdRol())
-                        .switchIfEmpty(Mono.error(new NotFoundException("Rol not found")))
+                        .switchIfEmpty(Mono.error(new NotFoundPragmaException (ROL_NOT_FOUND)))
                         .map(existingRol -> {
                             Rol partial = objectMapper.convertValue(dto, Rol.class);
                             if (partial == null) partial = new Rol();

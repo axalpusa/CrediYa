@@ -2,7 +2,7 @@ package co.com.pragma.api;
 
 import co.com.pragma.api.config.GlobalErrorHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +61,7 @@ class GlobalErrorHandlerTest {
 
     @Test
     void testValidationException() throws Exception {
-        ValidationException ex = new ValidationException ( List.of ( "field1 must not be null" ) );
+        ValidationPragmaException ex = new ValidationPragmaException ( List.of ( "field1 must not be null" ) );
         testExceptionHandling ( ex, HttpStatus.BAD_REQUEST, "Validation Error", "field1" );
     }
 

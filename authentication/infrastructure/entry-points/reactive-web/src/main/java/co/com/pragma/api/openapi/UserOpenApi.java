@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,11 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
+
+import static constants.Constants.REQUEST_INVALID;
+import static constants.Constants.SUCCESSFUL;
+import static constants.Constants.USER_FOUND;
+import static constants.Constants.USER_NOT_FOUND;
 
 @Configuration
 public class UserOpenApi {
@@ -36,6 +42,7 @@ public class UserOpenApi {
                             operationId = "saveUser",
                             summary = "Create a user (user admin)",
                             tags = {"Users"},
+                            security = { @SecurityRequirement(name = "bearerAuth") },
                             requestBody = @RequestBody(
                                     required = true,
                                     content = @Content(
@@ -44,8 +51,8 @@ public class UserOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(responseCode = "201", description = SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID)
                             }
                     )
             ),
@@ -59,6 +66,7 @@ public class UserOpenApi {
                             operationId = "updateUser",
                             summary = "Update a user",
                             tags = {"Users"},
+                            security = { @SecurityRequirement(name = "bearerAuth") },
                             requestBody = @RequestBody(
                                     required = true,
                                     content = @Content(
@@ -67,8 +75,8 @@ public class UserOpenApi {
                                     )
                             ),
                             responses = {
-                                    @ApiResponse(responseCode = "201", description = "Successful"),
-                                    @ApiResponse(responseCode = "400", description = "Request invalid")
+                                    @ApiResponse(responseCode = "201", description = SUCCESSFUL),
+                                    @ApiResponse(responseCode = "400", description = REQUEST_INVALID)
                             }
                     )
             ),
@@ -106,7 +114,7 @@ public class UserOpenApi {
                             responses = {
                                     @ApiResponse(responseCode = "200", description = "User updated successfully"),
                                     @ApiResponse(responseCode = "400", description = "Invalid request data"),
-                                    @ApiResponse(responseCode = "404", description = "User not found")
+                                    @ApiResponse(responseCode = "404", description = USER_NOT_FOUND)
                             }
                     )
             ),
@@ -131,7 +139,7 @@ public class UserOpenApi {
                             },
                             responses = {
                                     @ApiResponse(responseCode = "204", description = "User deleted successfully"),
-                                    @ApiResponse(responseCode = "404", description = "User not found"),
+                                    @ApiResponse(responseCode = "404", description = USER_NOT_FOUND),
                                     @ApiResponse(responseCode = "400", description = "Invalid ID supplied")
                             }
                     )
@@ -156,8 +164,8 @@ public class UserOpenApi {
                                     )
                             },
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "User found"),
-                                    @ApiResponse(responseCode = "404", description = "User not found")
+                                    @ApiResponse(responseCode = "200", description = USER_FOUND),
+                                    @ApiResponse(responseCode = "404", description = USER_NOT_FOUND)
                             }
                     )
             )

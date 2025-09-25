@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
 import org.springframework.context.annotation.Bean;
@@ -39,6 +40,7 @@ public class OrderOpenApi {
                             operationId = "saveOrder",
                             summary = "Create a order (user client)",
                             tags = {"Order"},
+                            security = { @SecurityRequirement(name = "bearerAuth") },
                             requestBody = @RequestBody(
                                     required = true,
                                     content = @Content(
@@ -92,13 +94,14 @@ public class OrderOpenApi {
             @RouterOperation(
                     path = ApiPaths.REPORT,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
-                    method = RequestMethod.POST,
+                    method = RequestMethod.GET,
                     beanClass = OrderHandler.class,
                     beanMethod = "listenReportOrder",
                     operation = @Operation(
                             operationId = "report",
-                            summary = "Report with pagination",
+                            summary = "Report with pagination (user assessor)",
                             tags = {"Order"},
+                            security = { @SecurityRequirement(name = "bearerAuth") },
                             requestBody = @RequestBody(
                                     required = true,
                                     content = @Content(
@@ -122,6 +125,7 @@ public class OrderOpenApi {
                             operationId = "updateOrder",
                             summary = "Update status order (user Assessor Approved o Reject)",
                             tags = {"Order"},
+                            security = { @SecurityRequirement(name = "bearerAuth") },
                             requestBody = @RequestBody(
                                     required = true,
                                     content = @Content(

@@ -11,7 +11,7 @@ import co.com.pragma.model.rol.Rol;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.rol.RolUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.ValidationException;
+import exceptions.ValidationPragmaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -115,7 +115,7 @@ class RouterRolHandlerTest {
         Rol invalidRol = buildModelFromReq ( req );
         when ( rolMapper.toModel ( any ( RolRequestDTO.class ) ) ).thenReturn ( invalidRol );
         when ( rolUseCase.saveRol ( any ( Rol.class ) ) )
-                .thenReturn ( Mono.error ( new ValidationException ( List.of ( "Name is required." ) ) ) );
+                .thenReturn ( Mono.error ( new ValidationPragmaException ( List.of ( "Name is required." ) ) ) );
         when ( transactionalAdapter.executeInTransaction ( any ( Mono.class ) ) )
                 .thenAnswer ( invocation -> invocation. < Mono < ? > >getArgument ( 0 ) );
         webTestClient.post ( )

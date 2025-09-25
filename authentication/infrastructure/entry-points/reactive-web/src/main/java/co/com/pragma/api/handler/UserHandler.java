@@ -5,16 +5,14 @@ import co.com.pragma.api.dto.request.UserRequestDTO;
 import co.com.pragma.api.dto.response.UserReportResponseDTO;
 import co.com.pragma.api.dto.response.UserResponseDTO;
 import co.com.pragma.api.mapper.UserMapperDTO;
-import co.com.pragma.model.rol.Rol;
 import co.com.pragma.model.user.User;
 import co.com.pragma.transaction.TransactionalAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import exceptions.NotFoundException;
-import exceptions.ValidationException;
+import exceptions.NotFoundPragmaException;
+import exceptions.ValidationPragmaException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -26,8 +24,10 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+
+import static constants.Constants.REQUEST_EMPTY;
+import static constants.Constants.USER_NOT_FOUND;
 
 @Slf4j
 @Component
@@ -43,8 +43,8 @@ public class UserHandler {
     public Mono < ServerResponse > listenSaveUser(ServerRequest request) {
         return transactionalAdapter.executeInTransaction (
                 request.bodyToMono ( UserRequestDTO.class )
-                        .switchIfEmpty ( Mono.error ( new ValidationException (
-                                List.of ( "Request body cannot be empty" )
+                        .switchIfEmpty ( Mono.error ( new ValidationPragmaException (
+                                List.of ( REQUEST_EMPTY )
                         ) ) )
                         .flatMap ( dto -> Mono.justOrEmpty ( userMapperDTO.toModel ( dto ) ) )
                         .map ( user -> {
@@ -63,7 +63,7 @@ public class UserHandler {
     public Mono < ServerResponse > listenUpdateUser(ServerRequest serverRequest) {
         return serverRequest.bodyToMono ( UserResponseDTO.class )
                 .flatMap(dto -> userUseCase.getUserById (dto.getIdUser ())
-                        .switchIfEmpty(Mono.error(new NotFoundException ("User not found")))
+                        .switchIfEmpty(Mono.error(new NotFoundPragmaException (USER_NOT_FOUND)))
                         .map(existingUser -> {
                             User partial = objectMapper.convertValue(dto, User.class);
                             if (partial == null) partial = new User ();

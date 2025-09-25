@@ -1,9 +1,9 @@
 package co.com.pragma.api.config;
 
-import exceptions.BadRequestException;
-import exceptions.NotFoundException;
-import exceptions.UnauthorizedException;
-import exceptions.ValidationException;
+import exceptions.BadRequestPragmaException;
+import exceptions.NotFoundPragmaException;
+import exceptions.UnauthorizedPragmaException;
+import exceptions.ValidationPragmaException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +18,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity < Map < String, Object > > handleValidationException(ValidationException ex) {
+    @ExceptionHandler(ValidationPragmaException.class)
+    public ResponseEntity < Map < String, Object > > handleValidationException(ValidationPragmaException ex) {
         Map < String, Object > response = new HashMap <> ( );
         response.put ( "status", HttpStatus.BAD_REQUEST.value ( ) );
         response.put ( "message", "Validation error" );
@@ -43,24 +43,24 @@ public class GlobalExceptionHandler {
         response.put ( "details", ex.getMessage ( ) );
         return ResponseEntity.status ( HttpStatus.INTERNAL_SERVER_ERROR ).body ( response );
     }
-    @ExceptionHandler(UnauthorizedException.class)
-    public Mono <Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
+    @ExceptionHandler(UnauthorizedPragmaException.class)
+    public Mono <Map<String, Object>> handleUnauthorized(UnauthorizedPragmaException ex) {
         return Mono.just(Map.of(
                 "status", HttpStatus.UNAUTHORIZED.value(),
                 "error", ex.getMessage()
         ));
     }
 
-    @ExceptionHandler(NotFoundException.class)
-    public Mono<Map<String, Object>> handleNotFound(NotFoundException ex) {
+    @ExceptionHandler(NotFoundPragmaException.class)
+    public Mono<Map<String, Object>> handleNotFound(NotFoundPragmaException ex) {
         return Mono.just(Map.of(
                 "status", HttpStatus.NOT_FOUND.value(),
                 "error", ex.getMessage()
         ));
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public Mono<Map<String, Object>> handleBadRequest(BadRequestException ex) {
+    @ExceptionHandler(BadRequestPragmaException.class)
+    public Mono<Map<String, Object>> handleBadRequest(BadRequestPragmaException ex) {
         return Mono.just(Map.of(
                 "status", HttpStatus.BAD_REQUEST.value(),
                 "error", ex.getMessage()
